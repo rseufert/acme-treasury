@@ -35,18 +35,19 @@ end
 Play from the mocks' Monday to `last`, a morning at a time, in the order the
 README gives: the bank's statements, then `plan --apply` when there is a
 `floor`, then mock-acme's payment run. `before(today)` is the world's turn
-each morning, and `upto` is how late the plan allows customers to be. Returns
+each morning, `upto` is how late the plan allows customers to be, and `some`
+how many of them at once. Returns
 each morning's forecast and plan, the day each invoice was first paid, the
 invoices the run paid more than once, and what the statements say each day
 closed at.
 """
-function played(sap, bank; last, floor = nothing, upto = 0, before = today -> nothing)
+function played(sap, bank; last, floor = nothing, upto = 0, some = -1, before = today -> nothing)
     forecasts, plans, paid, twice = Forecast[], Plan[], Dict{String,Date}(), String[]
     for today in Date(START[1:10]):Day(1):last
         before(today)
         world(sap, bank, "statements")
         days = count(d -> dayofweek(d) <= 5, today:Day(1):last)
-        scenario = Scenario(; days, floor = something(floor, 0), customerslateupto = upto)
+        scenario = Scenario(; days, floor = something(floor, 0), customerslateupto = upto, latecustomers = some)
         if floor !== nothing
             snap = snapshot(sap, bank, "ACME")
             plan = planpayments(snap, scenario)
@@ -436,6 +437,58 @@ else
                       [125_000_00, 125_000_00, 125_000_00, 25_000_00]
                 @test agrees(week)
                 @test_broken isempty(week.twice)        # Thursday's run pays it again
+            end
+        end
+        # Two customers, Ann and Bob, each owe money on Tuesday the 6th, and two
+        # invoices are due that day which need both. One of them pays a day late.
+        ann, bob = CUSTOMER, "1000003"
+        function twocustomers(body; late, kw...)
+            withmocks() do sap, bank
+                world(sap, bank, "reset")
+                world(sap, bank, "payable", UMBRELLA, "INV-0", "105000.00", "2026-10-05")
+                world(sap, bank, "payable", GLOBEX, "INV-1", "30000.00", "2026-10-06")
+                world(sap, bank, "payable", UMBRELLA, "INV-2", "25000.00", "2026-10-06")
+                owed = Dict(who => world(sap, bank, "receivable", who, amount, "2026-10-06")["ACCOUNTINGDOCUMENT"]
+                            for (who, amount) in ((ann, "30000.00"), (bob, "20000.00")))
+                pays(who, cents) = bankpost(bank, "/_mock/credits", Dict("account" => "ACME", "amount" => cents,
+                    "note" => "your invoice $(owed[who])", "debtor" => PAYER))
+                body(played(sap, bank; last = Date(2026, 10, 8), floor = 5_000_00, kw..., before = today -> begin
+                    today == Date(2026, 10, 6) + Day(late == ann) && pays(ann, 3_000_000)
+                    today == Date(2026, 10, 6) + Day(late == bob) && pays(bob, 2_000_000)
+                end))
+            end
+        end
+        tuesday, wednesday = Date(2026, 10, 6), Date(2026, 10, 7)
+
+        @testset "one of two customers pays late, and the plan trusted the due dates" begin
+            twocustomers(late = ann) do week
+                @test isempty(holding(week.plans[1]))
+                @test week.actual[tuesday] == -15_000_00
+            end
+        end
+
+        @testset "one of two customers pays late, and the plan allowed for any one" begin
+            # Whichever of them it is.
+            for (late, tuesdays) in ((ann, 10_000_00), (bob, 20_000_00))
+                twocustomers(; late, upto = 1, some = 1) do week
+                    @test minimum(values(week.actual)) >= 5_000_00
+                    @test week.actual[tuesday] == tuesdays
+                    @test week.actual[wednesday] == 15_000_00
+                    # Monday's plan is for the larger of the two being the late one.
+                    @test [(h.reference, h.to) for h in week.plans[1].holds] == [("INV-2", wednesday)]
+                    @test week.plans[1].late == Dict(ann => 1)
+                    @test week.paid == Dict("INV-0" => Date(2026, 10, 5), "INV-1" => tuesday, "INV-2" => wednesday)
+                    @test isempty(week.twice)
+                end
+            end
+        end
+
+        @testset "one of two customers pays late, and the plan allowed for both" begin
+            twocustomers(late = ann, upto = 1) do week
+                @test minimum(values(week.actual)) >= 5_000_00
+                # Monday's plan held both invoices, where allowing for one held one.
+                @test holding(week.plans[1]) == Set(["INV-1", "INV-2"])
+                @test helddays(week.plans[1]) == 2
             end
         end
     end

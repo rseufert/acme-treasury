@@ -325,3 +325,61 @@ end
     @test (shortfall(short).day, shortfall(short).closing) == (wednesday, -16_450_00)
     @test all(f -> breach(f) === nothing, short.cases[1:2])
 end
+
+# Two customers owing money in the week, and one invoice that needs both.
+@testset "some customers late, each on their own" begin
+    ann, bob = "1000006", "1000003"
+    owes(number, party, amount, due) = OpenItem(; kind = :receivable, document = "1710/2026/" * number,
+                                                number, party, amount, currency = "EUR", due)
+    tuesday, wednesday, thursday = Date(2026, 10, 13), Date(2026, 10, 14), Date(2026, 10, 15)
+    world = week(position = 20_000_00,
+                 items = [payable("INV-1", 30_000_00, tuesday), payable("INV-2", 25_000_00, tuesday),
+                          owes("1800000001", ann, 30_000_00, tuesday),
+                          owes("1800000002", bob, 20_000_00, tuesday)])
+    plan(some; upto = 1, days = 4, floor = 5_000_00) =
+        planpayments(world, Scenario(; days, floor, customerslateupto = upto, latecustomers = some))
+
+    # The two ends are the plans there already are.
+    trusting = planpayments(world, Scenario(days = 4, floor = 5_000_00))
+    together = planpayments(world, Scenario(days = 4, floor = 5_000_00, customerslateupto = 1))
+    @test held(trusting) == []
+    @test held(plan(0)) == held(trusting)
+    @test held(plan(2)) == held(plan(5)) == held(together) ==
+          [("INV-1", tuesday, wednesday, 1), ("INV-2", tuesday, wednesday, 1)]
+
+    # One of them late: Bob's 20,000.00 alone would do no harm, Ann's 30,000.00
+    # would, so the plan is for Ann, and holds only the invoice it has to.
+    one = plan(1)
+    @test held(one) == [("INV-2", tuesday, wednesday, 1)]
+    @test one.late == Dict(ann => 1)
+    @test closing(one.forecast) == [20_000_00, 40_000_00, 15_000_00, 15_000_00]
+    @test closing(worstcase(one)) == [20_000_00, 10_000_00, 15_000_00, 15_000_00]
+    @test shortfall(one) === nothing
+    @test [helddays(plan(some)) for some in 0:2] == [0, 1, 2]       # more late never holds less
+    @test helddays(plan(1; upto = 2)) >= helddays(one)              # nor does later
+
+    # The worst case is the true one: every set of at most `some` customers,
+    # each as late as the range allows, forecast by the forecast's own arithmetic.
+    for some in 0:2, upto in 1:2
+        made = plan(some; upto)
+        planned = Dict(h.document => h.to for h in made.holds)
+        lowest_of(own) = minimum(closing(first(AcmeTreasury.project(world, Scenario(days = 4), planned, own))))
+        every = [Dict{String,Int}(zip(set, late)) for set in ([], [ann], [bob], [ann, bob])
+                 if length(set) <= some for late in Iterators.product(fill(0:upto, length(set))...)]
+        @test minimum(lowest_of, every) == lowest(worstcase(made)).closing
+        @test minimum(lowest_of, every) >= 5_000_00
+    end
+
+    # A customer whose invoice is already past due, and still expected, is late
+    # for certain: not one of the number, and counted beside them.
+    already = week(position = 20_000_00,
+                   items = [payable("INV-1", 30_000_00, tuesday), payable("INV-2", 25_000_00, tuesday),
+                            owes("1800000001", ann, 30_000_00, tuesday),
+                            owes("1800000002", bob, 20_000_00, tuesday),
+                            owes("1800000003", bob, 1_000_00, Date(2026, 10, 9))])
+    sure = planpayments(already, Scenario(days = 4, floor = 5_000_00, customerslateupto = 1, latecustomers = 1))
+    # With Bob's money sure to be late and Ann's the one that may be, Tuesday
+    # has neither, and both invoices wait: the same world held one above.
+    @test held(sure) == [("INV-1", tuesday, wednesday, 1), ("INV-2", tuesday, wednesday, 1)]
+    @test shortfall(sure) === nothing
+end

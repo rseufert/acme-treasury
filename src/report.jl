@@ -65,16 +65,18 @@ const OUTCOME = Dict(
     (:block, :done) => "blocked", (:release, :wanted) => "to release",
     (:release, :done) => "released")
 
-function report(io::IO, plan::Plan, wanted::Vector{Change}; applied::Bool = false, trusting = nothing)
+function report(io::IO, plan::Plan, wanted::Vector{Change}; applied::Bool = false,
+                trusting = nothing, together = nothing)
     f, was = plan.forecast, plan.before
     floor = money(f.scenario.floor)
     when = Dates.format(f.now, dateformat"yyyy-mm-dd HH:MM")
     println(io, f.account, "  ", f.currency, "  as of ", when,
             f.pastcutoff ? ", after the cutoff" : ", before the cutoff")
     println(io, "A floor of ", floor, " over ", length(f.days), " business days")
-    length(plan.cases) > 1 &&
-        println(io, "Customers anywhere from ", first(plan.cases).scenario.customerslate, " to ",
-                last(plan.cases).scenario.customerslate, " business days late")
+    span, some = lateness(plan.scenario), plan.scenario.latecustomers
+    length(span) > 1 &&
+        println(io, some < 0 ? "Customers" : some == 1 ? "Any 1 customer" : "Any $some customers",
+                " anywhere from ", first(span), " to ", last(span), " business days late")
     println(io)
     low, waslow, short = lowest(f), lowest(was), shortfall(plan)
     day(d) = Dates.format(d, DAY)
@@ -92,18 +94,22 @@ function report(io::IO, plan::Plan, wanted::Vector{Change}; applied::Bool = fals
     println(io)
     println(io, "Lowest: ", money(low.closing), " on ", day(low.day),
             isempty(plan.holds) ? "" : ", where it was $(money(waslow.closing)) on $(day(waslow.day))")
-    if length(plan.cases) > 1
+    if length(span) > 1
         worst = worstcase(plan)
-        println(io, "At worst: ", money(lowest(worst).closing), " on ", day(lowest(worst).day),
-                ", with customers ", worst.scenario.customerslate,
-                worst.scenario.customerslate == 1 ? " day late" : " days late")
+        days(n) = n == 1 ? "1 day late" : "$n days late"
+        who = some < 0 ? "customers " * days(worst.scenario.customerslate) :
+              isempty(plan.late) ? "nobody late" :
+              join(("$customer $(days(plan.late[customer]))" for customer in sort!(collect(keys(plan.late)))), " and ")
+        println(io, "At worst: ", money(lowest(worst).closing), " on ", day(lowest(worst).day), ", with ", who)
     end
     short === nothing || println(io, "No plan keeps the floor: ", money(f.scenario.floor - short.closing),
                                  " short on ", day(short.day))
     if trusting !== nothing
         more = helddays(plan) - helddays(trusting)
         println(io, "The caution costs ", more, more == 1 ? " invoice-day" : " invoice-days",
-                " more than trusting the due dates")
+                " more than trusting the due dates",
+                together === nothing ? "" :
+                ", and $(helddays(together) - helddays(plan)) fewer than every customer late")
     end
     if !isempty(wanted)
         println(io, "\nIn SAP", applied ? "" : " (nothing was changed: --apply does it)")
@@ -115,7 +121,8 @@ function report(io::IO, plan::Plan, wanted::Vector{Change}; applied::Bool = fals
     end
 end
 
-function asjson(plan::Plan, wanted::Vector{Change}; applied::Bool = false, trusting = nothing)
+function asjson(plan::Plan, wanted::Vector{Change}; applied::Bool = false,
+                trusting = nothing, together = nothing)
     f, short, worst = plan.forecast, shortfall(plan), worstcase(plan)
     low, waslow = lowest(f), lowest(plan.before)
     JSON.json(Dict(
@@ -126,11 +133,14 @@ function asjson(plan::Plan, wanted::Vector{Change}; applied::Bool = false, trust
                          "days" => h.days) for h in plan.holds],
         "lowest" => Dict("day" => string(low.day), "closing" => low.closing),
         "lowestBefore" => Dict("day" => string(waslow.day), "closing" => waslow.closing),
-        "customersLate" => [c.scenario.customerslate for c in plan.cases],
-        "worst" => Dict("customersLate" => worst.scenario.customerslate,
+        "customersLate" => collect(lateness(plan.scenario)),
+        "lateCustomers" => plan.scenario.latecustomers < 0 ? nothing : plan.scenario.latecustomers,
+        "worst" => Dict("customersLate" => plan.scenario.latecustomers < 0 ?
+                                           worst.scenario.customerslate : plan.late,
                         "day" => string(lowest(worst).day), "closing" => lowest(worst).closing),
         "heldDays" => helddays(plan),
         "heldDaysTrusting" => trusting === nothing ? nothing : helddays(trusting),
+        "heldDaysAllLate" => together === nothing ? nothing : helddays(together),
         "shortfall" => short === nothing ? nothing :
                        Dict("day" => string(short.day), "amount" => f.scenario.floor - short.closing),
         "days" => [Dict("day" => string(d.day), "opening" => d.opening, "in" => d.inflow,

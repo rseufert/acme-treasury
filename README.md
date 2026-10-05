@@ -102,6 +102,7 @@ bin/acme-treasury --sap http://127.0.0.1:8000 --bank http://127.0.0.1:8080
 | `--days` | `10` | Business days to look ahead |
 | `--customers-late` | `0` | Assume every customer pays this many business days late |
 | `--customers-late-up-to` | off | The plan keeps the floor for every lateness from `--customers-late` to this. Give the forecast the same |
+| `--late-customers` | off | With `--customers-late-up-to`: at most this many customers are late at once, each on their own, whichever they are. Give the forecast the same |
 | `--release-blocked` | off | Assume every payment block is lifted |
 | `--floor` | `0.00` | Flag a closing balance under this |
 | `--plot` | off | Draw the closing balances in the terminal |
@@ -235,6 +236,29 @@ In SAP (nothing was changed: --apply does it)
 
   It is a plan, not a promise to wait: it is made again every morning, and on
   the morning the money is at the bank the invoice goes.
+- **Or only some of them are late.** Every customer late in the same week is
+  the cautious end, and with more than a few customers it holds invoices that
+  had no need to wait. `--late-customers K` asks the question in between:
+  each customer on time or late on their own, at most K of them at once, and
+  the floor kept whichever they are. With two customers owing 30,000.00 and
+  20,000.00 on the day two invoices fall due, allowing for both to be late
+  holds both invoices; allowing for any one holds one, and the output names
+  the customer the plan is for:
+
+  ```console
+  Any 1 customer anywhere from 0 to 1 business days late
+  ...
+  At worst: 10,000.00 on Tue 06 Oct, with 1000006 1 day late
+  The caution costs 1 invoice-day more than trusting the due dates, and 1 fewer than every customer late
+  ```
+
+  With K of many customers there are too many cases to list, and the usual
+  answer is to fold the worst case into the model. It is not needed here:
+  holding an invoice changes nothing a customer pays, so each day's worst case
+  is worked out before the solver runs, as what the K customers who would be
+  missed most on that day would leave missing. The model is no bigger for it.
+  A customer with a receivable already past due and still expected is late for
+  certain, and is counted beside the K, not among them.
 - **A receivable past its due date is still expected, inside the lateness
   assumed.** With customers a day late, an invoice due yesterday is expected
   today. A day after that it is overdue, as any receivable is when it has not
@@ -310,6 +334,9 @@ floor holds, but that the bank's statements say it held.
 | The customer pays a day late, and the plan trusted the due date | The block is lifted on Tuesday the 13th, the money has not come, and that day's statement closes at -16,450.00 |
 | The customer pays a day late, and the plan allowed for it | With `--customers-late-up-to 1`, no statement closes under 26,050.00, INV-E is paid on Wednesday the 14th, and every morning's forecast for customers a day late is the statements' |
 | The customer pays on time, and the plan had allowed for a day late | Monday's plan holds INV-E to Wednesday; on Tuesday the money is at the bank and the invoice goes that day. The forecasts made before Tuesday were out for Tuesday by the invoice, and say so |
+| One of two customers pays late, and the plan trusted the due dates | Two customers owe money on the day two invoices are due. One pays a day late, and that day's statement closes at -15,000.00 |
+| One of two customers pays late, and the plan allowed for any one | With `--late-customers 1`, played once with each customer as the late one: no statement under the floor either time, and one invoice held a day |
+| One of two customers pays late, and the plan allowed for both | No statement under the floor, and Monday's plan holds two invoices where allowing for one held one |
 | After the cutoff, without the schedule | Every day played at 16:00, an hour after the cutoff: Monday's run settles on Tuesday, and Tuesday's statement closes at 5,000.00, as Monday's forecast said |
 | After the cutoff, with the schedule | The plan is in days the money moves: INV-X is held from Tuesday to Thursday, the block is lifted on Wednesday evening, that run's payment settles on Thursday, and no statement is under the floor |
 | What Monday's plan cannot know | The closed account, with a floor: Monday holds a small invoice to make room for a large one the bank then refuses, so the hold was for nothing. Tuesday's plan is made from what happened, and its forecast is the statement |
@@ -417,7 +444,6 @@ script did itself.
 | Probabilities | Nothing in two deterministic mocks to fit them to. Scenarios are stated assumptions |
 | FX and more than one account | One account, one currency, as mock-bank's accounts are |
 | Direct debits and NACHA | The payment run this follows pays by `pain.001` credit transfer |
-| Each customer late on their own | A range of lateness is every customer late together, one case for each number of days. Each customer late or not on their own is two to the power of the customers, and a different method |
 | Early-payment discounts, late-payment penalties, supplier priority | The schedule costs lateness by amount and days alone; it reads no terms that price a late day and no mark on a supplier who should not be kept waiting |
 | Clearing customer items in SAP | Nothing in the chain does it yet, so a paid receivable stays open there and is recognised by the credit that names it |
 
