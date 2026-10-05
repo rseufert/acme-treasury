@@ -14,6 +14,7 @@ Base.@kwdef struct OpenItem
     block::String = ""
     reference::String = ""      # the supplier's invoice number, a payment's EndToEndId
     reopened::Bool = false      # ClearingIsReversed: paid once, and it came back
+    invoice::String = ""        # SupplierInvoice/FiscalYear, where a payment block is set
 end
 
 "A payment the bank has decided on, from the paying account."

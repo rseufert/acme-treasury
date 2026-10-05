@@ -11,14 +11,18 @@ struct Unusable <: Exception
 end
 Base.showerror(io::IO, e::Unusable) = print(io, e.message)
 
-function call(side::String, method::String, url::String)
-    response = try
-        HTTP.request(method, url; status_exception = false, retry = false,
+function send(side::String, method::String, url::String, headers = [], body = "")
+    try
+        HTTP.request(method, url, headers, body; status_exception = false, retry = false,
                      connect_timeout = 5, request_timeout = 30)
     catch error
         error isa InterruptException && rethrow()
         throw(Unusable("$side did not answer at $url"))
     end
+end
+
+function call(side::String, method::String, url::String)
+    response = send(side, method, url)
     response.status < 300 ||
         throw(Unusable("$side answered $(response.status) to $method $url"))
     String(response.body)
@@ -53,7 +57,8 @@ them, which a payment run's selection would not.
 """
 function openitems(sap::String)::Vector{OpenItem}
     key(row) = (row["CompanyCode"], row["FiscalYear"], row["AccountingDocument"])
-    references = Dict(key(row) => row["SupplierInvoiceIDByInvcgParty"] for row in odata(sap, INVOICES))
+    invoices = Dict(key(row) => row for row in odata(sap, INVOICES))
+    invoice(row, field) = haskey(invoices, key(row)) ? invoices[key(row)][field] : ""
     items = OpenItem[]
     for (letter, kind, party) in (("K", :payable, "Supplier"), ("D", :receivable, "Customer"))
         rows = odata(sap, ITEMS, "AccountingDocumentItemType eq '$letter' and " *
@@ -68,11 +73,48 @@ function openitems(sap::String)::Vector{OpenItem}
                 currency = row["TransactionCurrency"],
                 due = sapdate(row["NetDueDate"]),
                 block = something(row["PaymentBlockingReason"], ""),
-                reference = get(references, key(row), ""),
-                reopened = row["ClearingIsReversed"] === true))
+                reference = invoice(row, "SupplierInvoiceIDByInvcgParty"),
+                reopened = row["ClearingIsReversed"] === true,
+                invoice = kind == :payable && haskey(invoices, key(row)) ?
+                          invoice(row, "SupplierInvoice") * "/" * invoice(row, "FiscalYear") : ""))
         end
     end
     items
+end
+
+"""
+Writes to SAP: an `X-CSRF-Token` fetched once, with the session cookie HTTP.jl
+keeps for it.
+"""
+mutable struct SapSession
+    base::String
+    token::String
+end
+SapSession(base::String) = SapSession(base, "")
+
+"""
+Set a supplier invoice's payment block, or lift it with `""`. SAP carries it
+to the open item a payment run selects. Returns `""`, or why SAP refused.
+"""
+function setblock!(session::SapSession, invoice::String, code::String)::String
+    if session.token == ""
+        fetched = send("SAP", "GET", session.base * ODATA * "/API_SUPPLIERINVOICE_PROCESS_SRV/",
+                       ["X-CSRF-Token" => "Fetch"])
+        session.token = HTTP.header(fetched, "X-CSRF-Token", "")
+    end
+    number, year = split(invoice, "/")
+    response = send("SAP", "PATCH",
+                    "$(session.base)$INVOICES(SupplierInvoice='$number',FiscalYear='$year')",
+                    ["Content-Type" => "application/json", "Accept" => "application/json",
+                     "X-CSRF-Token" => session.token],
+                    JSON.json(Dict("PaymentBlockingReason" => code)))
+    response.status < 300 && return ""
+    said = try
+        JSON.parse(String(response.body))["error"]["message"]["value"]
+    catch
+        ""
+    end
+    "SAP answered $(response.status)" * (said == "" ? "" : ": $said")
 end
 
 # -- the bank --------------------------------------------------------------------

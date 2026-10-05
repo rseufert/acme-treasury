@@ -59,3 +59,66 @@ function asjson(f::Forecast)
                            "reference" => x.reference, "party" => x.party, "note" => x.note)
                       for x in f.asides]), 2)
 end
+
+const OUTCOME = Dict(
+    (:block, :wanted) => "to block", (:block, :already) => "already blocked",
+    (:block, :done) => "blocked", (:release, :wanted) => "to release",
+    (:release, :done) => "released")
+
+function report(io::IO, plan::Plan, wanted::Vector{Change}; applied::Bool = false)
+    f, was = plan.forecast, plan.before
+    floor = money(f.scenario.floor)
+    when = Dates.format(f.now, dateformat"yyyy-mm-dd HH:MM")
+    println(io, f.account, "  ", f.currency, "  as of ", when,
+            f.pastcutoff ? ", after the cutoff" : ", before the cutoff")
+    println(io, "A floor of ", floor, " over ", length(f.days), " business days")
+    println(io)
+    low, waslow, short = lowest(f), lowest(was), shortfall(plan)
+    day(d) = Dates.format(d, DAY)
+    if isempty(plan.holds)
+        println(io, breach(was) === nothing ? "Nothing to hold: never under the floor" :
+                    "Nothing to hold that would help")
+    else
+        println(io, "Hold")
+        for h in plan.holds
+            println(io, "  ", rpad(h.reference, 18), rpad(h.party, 14), lpad(money(h.amount), 16),
+                    "  due ", day(h.due), ", from ", day(h.from), " to ", day(h.to),
+                    ", ", h.days, h.days == 1 ? " day" : " days")
+        end
+    end
+    println(io)
+    println(io, "Lowest: ", money(low.closing), " on ", day(low.day),
+            isempty(plan.holds) ? "" : ", where it was $(money(waslow.closing)) on $(day(waslow.day))")
+    short === nothing || println(io, "No plan keeps the floor: ", money(f.scenario.floor - short.closing),
+                                 " short on ", day(short.day))
+    if !isempty(wanted)
+        println(io, "\nIn SAP", applied ? "" : " (nothing was changed: --apply does it)")
+        for c in wanted
+            said = c.outcome == :refused ? "refused: $(c.message)" : OUTCOME[(c.action, c.outcome)]
+            println(io, "  ", rpad(c.reference, 18), rpad(c.party, 14), lpad(money(c.amount), 16), "  ", said,
+                    c.until === nothing || c.outcome == :refused ? "" : " until $(day(c.until))")
+        end
+    end
+end
+
+function asjson(plan::Plan, wanted::Vector{Change}; applied::Bool = false)
+    f, short = plan.forecast, shortfall(plan)
+    low, waslow = lowest(f), lowest(plan.before)
+    JSON.json(Dict(
+        "account" => f.account, "currency" => f.currency, "asOf" => string(f.now),
+        "floor" => f.scenario.floor, "applied" => applied,
+        "holds" => [Dict("reference" => h.reference, "party" => h.party, "amount" => h.amount,
+                         "due" => string(h.due), "from" => string(h.from), "to" => string(h.to),
+                         "days" => h.days) for h in plan.holds],
+        "lowest" => Dict("day" => string(low.day), "closing" => low.closing),
+        "lowestBefore" => Dict("day" => string(waslow.day), "closing" => waslow.closing),
+        "shortfall" => short === nothing ? nothing :
+                       Dict("day" => string(short.day), "amount" => f.scenario.floor - short.closing),
+        "days" => [Dict("day" => string(d.day), "opening" => d.opening, "in" => d.inflow,
+                        "out" => d.outflow, "closing" => d.closing) for d in f.days],
+        "changes" => [Dict("action" => string(c.action), "invoice" => c.invoice,
+                           "reference" => c.reference, "party" => c.party, "amount" => c.amount,
+                           "until" => c.until === nothing ? nothing : string(c.until),
+                           "outcome" => string(c.outcome), "message" => c.message)
+                      for c in wanted]), 2)
+end

@@ -7,6 +7,7 @@ Base.@kwdef struct Scenario
     customerslate::Int = 0      # business days every customer pays after the due date
     releaseblocked::Bool = false
     floor::Int = 0              # minor units; a closing balance under it is flagged
+    holdcode::String = "T"      # the payment block that is the schedule's own
 end
 
 "Money expected to move: positive in, negative out."
@@ -73,6 +74,8 @@ What it holds to, each of which is a way a cash forecast is quietly wrong:
   outflow, joined on the `EndToEndId`.
 - **A blocked item is not money going out,** and an overdue receivable is not
   money coming in: it was due once already. Both are listed, not forecast.
+- **The schedule's own block is not anyone else's.** An item it is holding is
+  money going out on the day the schedule would let it go.
 - **A payment the bank refused will be refused again.** Its item stays open in
   SAP and every run reselects it; it is listed with the bank's reason.
 - **A payment that will come back comes back, and is owed again:** the credit
@@ -80,8 +83,16 @@ What it holds to, each of which is a way a cash forecast is quietly wrong:
 - **A credit the bank already holds replaces the receivable it names,** when
   it names one; a payer who quotes nothing is counted beside it.
 """
-forecast(snap::Snapshot, scenario::Scenario = Scenario())::Forecast =
+function forecast(snap::Snapshot, scenario::Scenario = Scenario())::Forecast
+    # An item under the schedule's own block is paid when the schedule lets it
+    # go, and that is decided again each morning from what is then true.
+    any(i -> held(i, scenario), snap.items) && return planpayments(snap, scenario).forecast
     first(project(snap, scenario, Dict{String,Date}()))
+end
+
+"Blocked by the schedule, which will lift it, and not by somebody with a reason."
+held(item::OpenItem, scenario::Scenario) =
+    item.kind == :payable && item.block != "" && item.block == scenario.holdcode
 
 """
 The forecast with some payables paid on a planned day instead of the day a run
@@ -130,7 +141,7 @@ function project(snap::Snapshot, scenario::Scenario, planned::Dict{String,Date})
             payment = get(latest, item.reference, nothing)
             if item.reference == ""
                 aside(:noinvoice, "no supplier invoice behind it, so no payment run selects it")
-            elseif item.block != "" && !scenario.releaseblocked
+            elseif item.block != "" && !held(item, scenario) && !scenario.releaseblocked
                 aside(:blocked, "payment block $(item.block)")
             elseif payment !== nothing && payment.status == "accepted" && !payment.returned
                 continue    # at the bank already: in the balance, or a flow above
@@ -141,10 +152,11 @@ function project(snap::Snapshot, scenario::Scenario, planned::Dict{String,Date})
             else
                 day = runday(snap, item.due)
                 push!(payables, (item, day))
-                held = get(planned, item.document, day)
-                push!(flows, Flow(held, amount, :payable, item.reference, item.party,
-                                  held != day ? "held from $day" :
+                later = get(planned, item.document, day)
+                push!(flows, Flow(later, amount, :payable, item.reference, item.party,
+                                  later != day ? "held from $day" :
                                   item.reopened ? "returned once, owed again" :
+                                  held(item, scenario) ? "the schedule lets it go" :
                                   item.block != "" ? "block $(item.block) released" : ""))
             end
         else
