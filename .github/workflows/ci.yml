@@ -24,9 +24,9 @@ jobs:
         with:
           python-version: "3.13"
       # The forecast is checked against the mocks as published, and against
-      # mock-acme's payment run, which is not on PyPI.
+      # mock-acme's payment run.
       - name: Install the mocks and mock-acme
-        run: python -m pip install mock-sap mock-bank git+https://github.com/rseufert/mock-acme
+        run: python -m pip install mock-sap mock-bank mock-acme
       - name: Say which mocks these are
         run: python -m pip list
       # The one action here that GitHub does not own, so it is pinned to a
