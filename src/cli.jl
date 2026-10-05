@@ -1,7 +1,8 @@
 const USAGE = """
 usage: acme-treasury [plan [--apply]] [--sap URL] [--bank URL] [--account ID]
                      [--days N] [--customers-late N] [--release-blocked]
-                     [--floor AMOUNT] [--hold-code C] [--plot] [--json]
+                     [--customers-late-up-to N] [--floor AMOUNT] [--hold-code C]
+                     [--plot] [--json]
 
 Forecast a bank account's closing balance from what mock-sap says is owed and
 what mock-bank says it holds. With `plan`, say which invoices to hold so that
@@ -15,6 +16,9 @@ no day closes under the floor.
   --account ID         the account at the bank (default: ACME)
   --days N             business days to look ahead (default: 10)
   --customers-late N   assume every customer pays N business days late
+  --customers-late-up-to N
+                       the plan keeps the floor for every lateness from
+                       --customers-late to N. Give the forecast the same
   --release-blocked    assume every payment block is lifted
   --floor AMOUNT       flag a closing balance under this (default: 0.00)
   --hold-code C        the payment block that is the schedule's own (default: T)
@@ -30,7 +34,7 @@ function main(args::Vector{String} = ARGS)::Int
     sap = get(ENV, "SAP_URL", "http://127.0.0.1:8000")
     bank = get(ENV, "BANK_URL", "http://127.0.0.1:8080")
     account, days, late, release, floor, plot, json = "ACME", 10, 0, false, 0, false, false
-    holdcode, writes = "T", false
+    holdcode, writes, upto = "T", false, 0
     args = copy(args)
     planning = !isempty(args) && first(args) == "plan"
     planning && popfirst!(args)
@@ -53,6 +57,9 @@ function main(args::Vector{String} = ARGS)::Int
             elseif flag == "--customers-late"
                 late = parse(Int, value())
                 late >= 0 || throw(ArgumentError("--customers-late is not negative"))
+            elseif flag == "--customers-late-up-to"
+                upto = parse(Int, value())
+                upto >= 0 || throw(ArgumentError("--customers-late-up-to is not negative"))
             elseif flag == "--release-blocked"
                 release = true
             elseif flag == "--floor"
@@ -76,11 +83,16 @@ function main(args::Vector{String} = ARGS)::Int
         return 2
     end
     sap, bank = String(rstrip(sap, '/')), String(rstrip(bank, '/'))
-    scenario = Scenario(; days, customerslate = late, releaseblocked = release, floor, holdcode)
+    scenario = Scenario(; days, customerslate = late, customerslateupto = upto,
+                        releaseblocked = release, floor, holdcode)
+    trusting = nothing
     result, wanted = try
         snap = snapshot(sap, bank, account)
         if planning
             plan = planpayments(snap, scenario)
+            # What the caution costs is said against the plan that has none.
+            length(lateness(scenario)) > 1 &&
+                (trusting = planpayments(snap, assuming(scenario, late)))
             wanted = changes(snap, plan)
             plan, writes ? apply(sap, wanted, holdcode) : wanted
         else
@@ -93,8 +105,8 @@ function main(args::Vector{String} = ARGS)::Int
     end
     try
         if planning
-            json ? println(asjson(result, wanted; applied = writes)) :
-                   report(stdout, result, wanted; applied = writes)
+            json ? println(asjson(result, wanted; applied = writes, trusting)) :
+                   report(stdout, result, wanted; applied = writes, trusting)
         else
             json ? println(asjson(result)) : report(stdout, result; plot)
         end

@@ -5,10 +5,18 @@ a block stays a block.
 Base.@kwdef struct Scenario
     days::Int = 10              # business days to look ahead, the first included
     customerslate::Int = 0      # business days every customer pays after the due date
+    customerslateupto::Int = 0  # a plan keeps the floor for every lateness from that to this
     releaseblocked::Bool = false
     floor::Int = 0              # minor units; a closing balance under it is flagged
     holdcode::String = "T"      # the payment block that is the schedule's own
 end
+
+"Every lateness a plan is held to: one, unless a range was asked for."
+lateness(s::Scenario) = s.customerslate:max(s.customerslate, s.customerslateupto)
+
+"The same scenario with every customer exactly `late` business days late."
+assuming(s::Scenario, late::Int) =
+    Scenario(s.days, late, late, s.releaseblocked, s.floor, s.holdcode)
 
 "Money expected to move: positive in, negative out."
 struct Flow
@@ -164,7 +172,8 @@ function project(snap::Snapshot, scenario::Scenario, planned::Dict{String,Date})
                 continue    # the bank holds a credit that names it
             elseif item.due === nothing
                 aside(:nodue, "no due date")
-            elseif item.due < snap.today
+            elseif addbusinessdays(cal, item.due, scenario.customerslate) < snap.today
+                # Not here by the day it was expected, even allowing for lateness.
                 aside(:overdue, "due $(item.due)")
             else
                 push!(flows, Flow(addbusinessdays(cal, item.due, scenario.customerslate), amount,

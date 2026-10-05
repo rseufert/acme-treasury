@@ -276,3 +276,52 @@ end
           [(:release, "INV-E", nothing, :wanted)]
     @test told(week(position = 100_000_00, items = [inv(""), other, money_in]), scenario) == []
 end
+
+@testset "a receivable past its due date is still expected, inside the lateness assumed" begin
+    items = [receivable("1800000001", 42_500_00, Date(2026, 10, 9))]       # the Friday before
+    @test reasons(forecast(week(; items), Scenario(days = 2))) == [:overdue]
+    late = forecast(week(; items), Scenario(days = 2, customerslate = 1))
+    @test closing(late) == [87_500_00, 87_500_00]
+    @test only(late.flows).note == "due 2026-10-09, assumed late"
+    # A day after that it is overdue again: it did not come when it was expected.
+    tuesday = Date(2026, 10, 13)
+    @test reasons(forecast(week(; today = tuesday, now = DateTime(tuesday) + Hour(9), items),
+                           Scenario(days = 2, customerslate = 1))) == [:overdue]
+end
+
+@testset "a plan that keeps the floor when customers pay late" begin
+    world = week(items = [payable("INV-E", 61_450_00, Date(2026, 10, 10)),
+                          receivable("1800000001", 42_500_00, Date(2026, 10, 13))])
+    plan(upto; days = 4, late = 0) = planpayments(world, Scenario(; days, floor = 10_000_00,
+                                                  customerslate = late, customerslateupto = upto))
+    wednesday, thursday = Date(2026, 10, 14), Date(2026, 10, 15)
+
+    # With no range, or one that is no range, it is the plan as it was.
+    @test held(plan(0)) == [("INV-E", MON12, Date(2026, 10, 13), 1)]
+    @test length(plan(0).cases) == 1
+    @test held(plan(1; late = 1)) == held(plan(0; late = 1)) == [("INV-E", MON12, wednesday, 2)]
+
+    # A day late, the money is there on Wednesday, so that is when the invoice goes:
+    # the same hold in both cases, and the floor kept in both.
+    cautious = plan(1)
+    @test held(cautious) == [("INV-E", MON12, wednesday, 2)]
+    @test [c.scenario.customerslate for c in cautious.cases] == [0, 1]
+    @test closing(cautious.forecast) == closing(cautious.cases[1]) == [45_000_00, 87_500_00, 26_050_00, 26_050_00]
+    @test closing(cautious.cases[2]) == [45_000_00, 45_000_00, 26_050_00, 26_050_00]
+    @test shortfall(cautious) === nothing
+    # The plan that trusts the due date is under the floor if the customer is late.
+    paid_tuesday = Dict(h.document => h.to for h in plan(0).holds)
+    @test closing(first(AcmeTreasury.project(world, Scenario(days = 4, customerslate = 1), paid_tuesday))) ==
+          [45_000_00, -16_450_00, 26_050_00, 26_050_00]
+
+    # A wider range never holds less.
+    @test held(plan(2)) == [("INV-E", MON12, thursday, 3)]
+    @test [helddays(plan(upto)) for upto in 0:2] == [1, 2, 3]
+
+    # A case no plan can keep is held to the best it can be, and named.
+    short = plan(2; days = 3)                       # two days late is after the last day
+    @test held(short) == [("INV-E", MON12, wednesday, 2)]
+    @test worstcase(short).scenario.customerslate == 2
+    @test (shortfall(short).day, shortfall(short).closing) == (wednesday, -16_450_00)
+    @test all(f -> breach(f) === nothing, short.cases[1:2])
+end

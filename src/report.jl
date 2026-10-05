@@ -65,13 +65,16 @@ const OUTCOME = Dict(
     (:block, :done) => "blocked", (:release, :wanted) => "to release",
     (:release, :done) => "released")
 
-function report(io::IO, plan::Plan, wanted::Vector{Change}; applied::Bool = false)
+function report(io::IO, plan::Plan, wanted::Vector{Change}; applied::Bool = false, trusting = nothing)
     f, was = plan.forecast, plan.before
     floor = money(f.scenario.floor)
     when = Dates.format(f.now, dateformat"yyyy-mm-dd HH:MM")
     println(io, f.account, "  ", f.currency, "  as of ", when,
             f.pastcutoff ? ", after the cutoff" : ", before the cutoff")
     println(io, "A floor of ", floor, " over ", length(f.days), " business days")
+    length(plan.cases) > 1 &&
+        println(io, "Customers anywhere from ", first(plan.cases).scenario.customerslate, " to ",
+                last(plan.cases).scenario.customerslate, " business days late")
     println(io)
     low, waslow, short = lowest(f), lowest(was), shortfall(plan)
     day(d) = Dates.format(d, DAY)
@@ -89,8 +92,19 @@ function report(io::IO, plan::Plan, wanted::Vector{Change}; applied::Bool = fals
     println(io)
     println(io, "Lowest: ", money(low.closing), " on ", day(low.day),
             isempty(plan.holds) ? "" : ", where it was $(money(waslow.closing)) on $(day(waslow.day))")
+    if length(plan.cases) > 1
+        worst = worstcase(plan)
+        println(io, "At worst: ", money(lowest(worst).closing), " on ", day(lowest(worst).day),
+                ", with customers ", worst.scenario.customerslate,
+                worst.scenario.customerslate == 1 ? " day late" : " days late")
+    end
     short === nothing || println(io, "No plan keeps the floor: ", money(f.scenario.floor - short.closing),
                                  " short on ", day(short.day))
+    if trusting !== nothing
+        more = helddays(plan) - helddays(trusting)
+        println(io, "The caution costs ", more, more == 1 ? " invoice-day" : " invoice-days",
+                " more than trusting the due dates")
+    end
     if !isempty(wanted)
         println(io, "\nIn SAP", applied ? "" : " (nothing was changed: --apply does it)")
         for c in wanted
@@ -101,8 +115,8 @@ function report(io::IO, plan::Plan, wanted::Vector{Change}; applied::Bool = fals
     end
 end
 
-function asjson(plan::Plan, wanted::Vector{Change}; applied::Bool = false)
-    f, short = plan.forecast, shortfall(plan)
+function asjson(plan::Plan, wanted::Vector{Change}; applied::Bool = false, trusting = nothing)
+    f, short, worst = plan.forecast, shortfall(plan), worstcase(plan)
     low, waslow = lowest(f), lowest(plan.before)
     JSON.json(Dict(
         "account" => f.account, "currency" => f.currency, "asOf" => string(f.now),
@@ -112,6 +126,11 @@ function asjson(plan::Plan, wanted::Vector{Change}; applied::Bool = false)
                          "days" => h.days) for h in plan.holds],
         "lowest" => Dict("day" => string(low.day), "closing" => low.closing),
         "lowestBefore" => Dict("day" => string(waslow.day), "closing" => waslow.closing),
+        "customersLate" => [c.scenario.customerslate for c in plan.cases],
+        "worst" => Dict("customersLate" => worst.scenario.customerslate,
+                        "day" => string(lowest(worst).day), "closing" => lowest(worst).closing),
+        "heldDays" => helddays(plan),
+        "heldDaysTrusting" => trusting === nothing ? nothing : helddays(trusting),
         "shortfall" => short === nothing ? nothing :
                        Dict("day" => string(short.day), "amount" => f.scenario.floor - short.closing),
         "days" => [Dict("day" => string(d.day), "opening" => d.opening, "in" => d.inflow,
