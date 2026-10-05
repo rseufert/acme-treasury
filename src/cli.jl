@@ -1,7 +1,8 @@
 const USAGE = """
 usage: acme-treasury [plan [--apply]] [--sap URL] [--bank URL] [--account ID]
                      [--days N] [--customers-late N] [--release-blocked]
-                     [--customers-late-up-to N] [--floor AMOUNT] [--hold-code C]
+                     [--customers-late-up-to N] [--late-customers K]
+                     [--floor AMOUNT] [--hold-code C]
                      [--plot] [--json]
 
 Forecast a bank account's closing balance from what mock-sap says is owed and
@@ -19,6 +20,8 @@ no day closes under the floor.
   --customers-late-up-to N
                        the plan keeps the floor for every lateness from
                        --customers-late to N. Give the forecast the same
+  --late-customers K   with --customers-late-up-to: at most K customers are late
+                       at once, each on their own, whichever they are
   --release-blocked    assume every payment block is lifted
   --floor AMOUNT       flag a closing balance under this (default: 0.00)
   --hold-code C        the payment block that is the schedule's own (default: T)
@@ -34,7 +37,7 @@ function main(args::Vector{String} = ARGS)::Int
     sap = get(ENV, "SAP_URL", "http://127.0.0.1:8000")
     bank = get(ENV, "BANK_URL", "http://127.0.0.1:8080")
     account, days, late, release, floor, plot, json = "ACME", 10, 0, false, 0, false, false
-    holdcode, writes, upto = "T", false, 0
+    holdcode, writes, upto, some = "T", false, 0, -1
     args = copy(args)
     planning = !isempty(args) && first(args) == "plan"
     planning && popfirst!(args)
@@ -60,6 +63,9 @@ function main(args::Vector{String} = ARGS)::Int
             elseif flag == "--customers-late-up-to"
                 upto = parse(Int, value())
                 upto >= 0 || throw(ArgumentError("--customers-late-up-to is not negative"))
+            elseif flag == "--late-customers"
+                some = parse(Int, value())
+                some >= 0 || throw(ArgumentError("--late-customers is not negative"))
             elseif flag == "--release-blocked"
                 release = true
             elseif flag == "--floor"
@@ -77,15 +83,17 @@ function main(args::Vector{String} = ARGS)::Int
                 throw(ArgumentError("unknown argument $flag"))
             end
         end
+        some >= 0 && upto <= late &&
+            throw(ArgumentError("--late-customers needs --customers-late-up-to: how late they may be"))
     catch error
         error isa ArgumentError || rethrow()
         println(stderr, "acme-treasury: ", error.msg, "\n\n", USAGE)
         return 2
     end
     sap, bank = String(rstrip(sap, '/')), String(rstrip(bank, '/'))
-    scenario = Scenario(; days, customerslate = late, customerslateupto = upto,
+    scenario = Scenario(; days, customerslate = late, customerslateupto = upto, latecustomers = some,
                         releaseblocked = release, floor, holdcode)
-    trusting = nothing
+    trusting = together = nothing
     result, wanted = try
         snap = snapshot(sap, bank, account)
         if planning
@@ -93,6 +101,8 @@ function main(args::Vector{String} = ARGS)::Int
             # What the caution costs is said against the plan that has none.
             length(lateness(scenario)) > 1 &&
                 (trusting = planpayments(snap, assuming(scenario, late)))
+            some >= 0 && (together = planpayments(snap, Scenario(; days, customerslate = late,
+                customerslateupto = upto, releaseblocked = release, floor, holdcode)))
             wanted = changes(snap, plan)
             plan, writes ? apply(sap, wanted, holdcode) : wanted
         else
@@ -105,8 +115,8 @@ function main(args::Vector{String} = ARGS)::Int
     end
     try
         if planning
-            json ? println(asjson(result, wanted; applied = writes, trusting)) :
-                   report(stdout, result, wanted; applied = writes, trusting)
+            json ? println(asjson(result, wanted; applied = writes, trusting, together)) :
+                   report(stdout, result, wanted; applied = writes, trusting, together)
         else
             json ? println(asjson(result)) : report(stdout, result; plot)
         end

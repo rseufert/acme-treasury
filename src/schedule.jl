@@ -24,6 +24,7 @@ struct Plan
     forecast::Forecast
     cases::Vector{Forecast}
     late::Dict{String,Int}      # with `latecustomers`: who is late in the worst case, and by how long
+    scenario::Scenario          # as it was asked for, with its range
 end
 
 "The case the plan leaves lowest: the lateness that would hurt most, and of equals the latest."
@@ -94,13 +95,13 @@ function planpayments(snap::Snapshot, scenario::Scenario = Scenario())::Plan
         [[d.closing for d in first(project(snap, first(cases), planned)).days] .- short] :
         [[d.closing for d in f.days] for f in made(planned)]
     function plan(holds, planned)
-        some || return Plan(holds, before, first(made(planned)), made(planned), Dict{String,Int}())
+        some || return Plan(holds, before, first(made(planned)), made(planned), Dict{String,Int}(), scenario)
         after = first(project(snap, first(cases), planned))
         day = argmin(only(closings(planned)))
         worst = first(project(snap, first(cases), planned, who[day]))
         worst.days[day].closing == only(closings(planned))[day] ||
             error("the worst case does not add up to what the plan was held to")
-        Plan(holds, before, after, [after, worst], who[day])
+        Plan(holds, before, after, [after, worst], who[day], scenario)
     end
 
     all(>=(scenario.floor), Iterators.flatten(closings(nothing_held))) && return plan(Hold[], nothing_held)
