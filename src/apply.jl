@@ -35,8 +35,9 @@ clears it, and a payment run that starts before that statement would select
 it and pay it again. The statement then clears the item, block and all; if
 the payment comes back instead, the item is no longer at the bank and the
 block is lifted like any other the plan does not hold. It protects the run
-that follows it and no other, and it is not the fix: that is SAP knowing an
-item has been sent.
+that follows it and no other. It is for a payment program that keeps no
+record of what it has sent: one that does, as mock-acme's register does,
+leaves it nothing to do.
 """
 function changes(snap::Snapshot, plan::Plan; guard::Bool = false)::Vector{Change}
     code = plan.forecast.scenario.holdcode

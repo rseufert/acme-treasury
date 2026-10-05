@@ -146,7 +146,9 @@ Each of these is a way a cash forecast is quietly wrong.
 - **A payment at the bank is not owed twice.** SAP keeps an item open until a
   statement clears it, so on the morning after a payment run the same invoice
   is an open item in SAP and a debit at the bank. They are joined on the
-  `EndToEndId` and counted once.
+  `EndToEndId` and counted once. The number alone is not enough, since two
+  suppliers may use the same one: the payment is also for the item's amount,
+  and did not reach the bank before the item was posted.
 - **A blocked item is not money going out.** It is listed with its block, and
   `--release-blocked` says what lifting them all would do.
 - **An overdue receivable is not money coming in.** It was due once already.
@@ -296,15 +298,21 @@ Each business morning, in this order:
 
 #### The guard
 
-SAP keeps an item open until a statement clears it, and the payment run
-selects every open item that is due and not blocked. So a run started before
-that statement pays the invoice a second time. That is not this repository's
-bug ([mock-acme#2](https://github.com/rseufert/mock-acme/issues/2), which
-waits on [mock-sap#90](https://github.com/rseufert/mock-sap/issues/90): SAP
-has nowhere to record "sent, not yet cleared"), but `plan --apply` is the one
-step of the morning that reads both sides. It already joins every open item
-to the bank's payments, so that the forecast does not count one twice, and it
-already sets blocks. `--guard` puts the two together:
+SAP keeps an item open until a statement clears it, and a payment run selects
+every open item that is due and not blocked. So a run started before that
+statement would pay the invoice a second time, unless the payment program
+remembers what it has sent. mock-acme's does, from 0.2.0: its `Register`
+records what each run carried to the bank and holds those items back until
+they are cleared or refused
+([mock-acme#2](https://github.com/rseufert/mock-acme/issues/2)), and
+`test/world.py` gives it a file to keep that in. That is the fix, and with it
+the guard has nothing to do.
+
+`--guard` is for a run that has no such record: one started in a new process
+each day with no register file, or a payment program that is not mock-acme's.
+`plan --apply` is the one step of the morning that reads both sides. It
+already joins every open item to the bank's payments, so that the forecast
+does not count one twice, and it already sets blocks:
 
 ```console
 $ bin/acme-treasury plan --guard
@@ -318,13 +326,15 @@ In SAP (nothing was changed: --apply does it)
 | sent back, or refused | Not blocked for this. A block left from when it was at the bank is lifted, so the next run pays it again, or the refusal is seen again |
 | none | As without it |
 
-- **It needs no floor,** and changes nothing the forecast says: the invoice is
-  counted once, as it was.
-- **It protects the run that follows it and no other.** A run started without
-  it, or before it, is as exposed as before.
-- **It is not the fix.** The fix is SAP holding the state and the run reading
-  it. This is a second pair of eyes that happens to be standing in the right
-  place, and it should come out when that lands.
+- **A payment is an invoice's by more than its number.** The bank knows a
+  payment by its `EndToEndId`, the supplier's invoice number, and two
+  suppliers may use the same one. The payment must also be for the item's
+  amount and currency, and not have reached the bank before the item was
+  posted. Without that, an invoice numbered like one already paid would be
+  blocked every morning and never paid. The forecast makes the same join and
+  is held to the same rule.
+- **It needs no floor,** and changes nothing the forecast says.
+- **It protects the run that follows it and no other.**
 - **It leans on the mock's control plane.** Which payments the bank has is read
   from `GET /_mock/payments`. A real desk would have the `pain.002` status
   reports. Here a write depends on that read.
@@ -375,8 +385,9 @@ floor holds, but that the bank's statements say it held.
 | The customer pays a day late, and the plan trusted the due date | The block is lifted on Tuesday the 13th, the money has not come, and that day's statement closes at -16,450.00 |
 | The customer pays a day late, and the plan allowed for it | With `--customers-late-up-to 1`, no statement closes under 26,050.00, INV-E is paid on Wednesday the 14th, and every morning's forecast for customers a day late is the statements' |
 | The customer pays on time, and the plan had allowed for a day late | Monday's plan holds INV-E to Wednesday; on Tuesday the money is at the bank and the invoice goes that day. The forecasts made before Tuesday were out for Tuesday by the invoice, and say so |
-| After the cutoff, with the guard | The same days with `plan --apply --guard` before each run: the invoice is paid once, the statement clears the blocked item, and nothing is left to lift. With the schedule as well, it is held, then paid once |
-| Under the guard, a payment that comes back | The bank returns the payment two days on. The item reopens still blocked, the next `plan --apply` lifts the block, and the run pays it again, once |
+| A run with no register pays twice after the cutoff | The same days with a payment program that remembers nothing between mornings: the invoice is paid again on Tuesday, and Wednesday closes at -115,000.00 |
+| With no register and the guard | `plan --apply --guard` before each run: the invoice is paid once, the statement clears the blocked item, and nothing is left to lift |
+| With no register and the guard, a payment that comes back | The bank returns the payment two days on. The item reopens still blocked, the next `plan --apply` lifts the block, and the run pays it again, once |
 | One of two customers pays late, and the plan trusted the due dates | Two customers owe money on the day two invoices are due. One pays a day late, and that day's statement closes at -15,000.00 |
 | One of two customers pays late, and the plan allowed for any one | With `--late-customers 1`, played once with each customer as the late one: no statement under the floor either time, and one invoice held a day |
 | One of two customers pays late, and the plan allowed for both | No statement under the floor, and Monday's plan holds two invoices where allowing for one held one |
@@ -384,15 +395,11 @@ floor holds, but that the bank's statements say it held.
 | After the cutoff, with the schedule | The plan is in days the money moves: INV-X is held from Tuesday to Thursday, the block is lifted on Wednesday evening, that run's payment settles on Thursday, and no statement is under the floor |
 | What Monday's plan cannot know | The closed account, with a floor: Monday holds a small invoice to make room for a large one the bank then refuses, so the hold was for nothing. Tuesday's plan is made from what happened, and its forecast is the statement |
 
-The two after the cutoff each carry one test marked broken, and it is not
-this repository's: a run started before the statement that would clear an
-item pays the invoice again
-([mock-acme#2](https://github.com/rseufert/mock-acme/issues/2), which waits
-on [mock-sap#90](https://github.com/rseufert/mock-sap/issues/90)). Run once a
-morning before the cutoff, as everything else here is, the statement always
-comes first. Run after the cutoff every day, it does not, and neither the
-forecast nor the schedule prevents the second payment. `--guard` does, and
-the three tests after those two hold it to that.
+Played after the cutoff every day, each run starts before the statement that
+would clear the day before's payment. What keeps it from paying again is
+mock-acme's register, which `test/world.py` keeps in a file for each pair of
+mocks. The three tests of the guard are played without one, and the first of
+them states what then happens: the invoice is paid twice.
 
 They need a Python with both mocks and mock-acme installed, as in the quick
 start: `MOCK_PYTHON`, or `python3`.
