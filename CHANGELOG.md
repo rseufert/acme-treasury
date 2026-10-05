@@ -7,6 +7,17 @@ major version is 0, a minor bump may change behaviour, and each entry says so
 where it does. Nothing is published anywhere: a version is a tag on this
 repository.
 
+## [Unreleased]
+
+### Added
+
+- **A plan for some customers late, not all of them at once** (#16).
+  `--late-customers K`, with `--customers-late-up-to N`, keeps the floor
+  whichever K customers are up to N business days late, each on their own.
+  The output names the customers in the worst case, and says what the plan
+  costs against trusting the due dates and against every customer late.
+- Tests for `plan --apply` after the bank's cutoff.
+
 ## [0.2.0] - 2026-10-05
 
 ### Added
