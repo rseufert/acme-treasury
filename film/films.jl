@@ -3,7 +3,10 @@
 # The layout is mock-films', so whatever reads its docs/films/index.json reads
 # this one: one entry for each film, with its name (stable for the life of the
 # film), the GIF's hash and size, the mocks and versions it was captured from,
-# the capture's own `source`, and the words that go with it. The numbers are
+# the capture's own `source`, and the words that go with it. One field is this
+# repository's own: `driven_by`, whatever else the capture ran and at which
+# version, which here is mock-acme, whose payment run made the payments.
+# `mocks` stays the mocks the film shows. The numbers are
 # never typed: they are read from the GIF and from the capture. The words are
 # in docs/films/words.json, edited by hand and reviewed like code, with the
 # capture and the renderer each film is made from.
@@ -50,6 +53,8 @@ function entry(name, film, previous, today)
              status = previous === nothing ? "finished" : previous["status"],
              sha256 = hash, width, height, mocks = film["mocks"],
              mock_versions = NamedTuple(Symbol(mock) => capture["versions"][mock] for mock in film["mocks"]),
+             driven_by = NamedTuple(Symbol(name) => version for (name, version) in sort!(collect(capture["versions"]))
+                                    if !(name in film["mocks"])),
              alt = film["alt"], caption = film["caption"], source = capture["source"],
              updated = unchanged ? previous["updated"] : string(today))
     haskey(film, "poster_ms") ? merge(found, (; poster_ms = film["poster_ms"])) : found

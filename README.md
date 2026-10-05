@@ -22,7 +22,7 @@ mock-bank  ──camt.053──▶  the same figure, or the test fails
 
 ![Monday's forecast is drawn as a line. Monday's statement lands off it, in red, by 9,300.00. Tuesday's forecast replaces the line and names the invoice the bank refused, and the next seven statements land on it](docs/films/treasury_week.gif)
 
-*mock-sap 0.17.1 and mock-bank 0.7.0, played for a week by mock-acme's payment run: `film/capture.jl`. Every block is a `camt.053`.*
+*mock-sap 0.17.1 and mock-bank 0.7.0, played for a week by mock-acme 0.1.0's payment run: `film/capture.jl`. Every block is a `camt.053`.*
 
 Most cash forecasts are never held to anything: by the time the day arrives
 nobody looks back. Both mocks keep a clock a test can move, so here Monday's
@@ -361,7 +361,10 @@ indexes its own, so that whatever reads its `docs/films/index.json`, as
 rickseufert.com does, reads this one: one entry for each film, with its name
 (stable for the life of the film), the GIF's hash and size, the date its bytes
 last changed, the mocks and versions it was captured from, the capture's own
-`source`, and its `alt` and `caption`.
+`source`, and its `alt` and `caption`. One field is this repository's own:
+`driven_by` is whatever else the capture ran, and at which version, read from
+the capture as `mock_versions` is. Here that is mock-acme, whose payment run
+made the payments; `mocks` stays the mocks a film shows.
 
 | File | What it is |
 | --- | --- |
