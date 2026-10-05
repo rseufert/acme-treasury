@@ -10,6 +10,8 @@ to agree with it. Each command prints JSON.
     world.py SAP BANK payable SUPPLIER REFERENCE GROSS DUE [BLOCK]
     world.py SAP BANK receivable CUSTOMER AMOUNT DUE
     world.py SAP BANK morning
+    world.py SAP BANK statements
+    world.py SAP BANK run
 """
 import datetime
 import json
@@ -64,24 +66,41 @@ def receivable(sap, customer, amount, due):
     return {"ACCOUNTINGDOCUMENT": out["OBJ_KEY"][:10]}
 
 
+def today(bank):
+    clock = control(bank, "GET", "/_mock/state")["clock"]
+    return datetime.date.fromisoformat(clock["date"]), clock["isBusinessDay"]
+
+
+def statements(sap, bank):
+    """Post the statements the bank has issued since the last time."""
+    day, _ = today(bank)
+    before = Run(day, "pre")
+    PaymentRun(sap, bank, ACME).reconcile(before)
+    return {"day": day.isoformat(), "items": [], "problems": list(before.problems)}
+
+
+def run(sap, bank):
+    """Pay what is due today. No run on a day the bank does not settle."""
+    day, settles = today(bank)
+    items, problems = [], []
+    if settles:
+        done = PaymentRun(sap, bank, ACME).run(day, "R1")
+        problems = list(done.problems)
+        items = [{"reference": i.reference, "status": i.status, "reason": i.reason,
+                  "amount": i.amount} for i in done.items]
+    return {"day": day.isoformat(), "items": items, "problems": problems}
+
+
 def morning(sap, bank):
     """Post the statements the bank has issued, then pay what is due today.
 
     Statements first, so an invoice whose payment came back yesterday is open
-    again before today's selection. No run on a day the bank does not settle.
+    again before today's selection. A payment schedule is applied between the
+    two, which is why each is also a command of its own.
     """
-    clock = control(bank, "GET", "/_mock/state")["clock"]
-    today = datetime.date.fromisoformat(clock["date"])
-    payments = PaymentRun(sap, bank, ACME)
-    before = Run(today, "pre")
-    payments.reconcile(before)
-    items, problems = [], list(before.problems)
-    if clock["isBusinessDay"]:
-        run = payments.run(today, "R1")
-        problems += run.problems
-        items = [{"reference": i.reference, "status": i.status, "reason": i.reason,
-                  "amount": i.amount} for i in run.items]
-    return {"day": today.isoformat(), "items": items, "problems": problems}
+    posted, paid = statements(sap, bank), run(sap, bank)
+    return {"day": paid["day"], "items": paid["items"],
+            "problems": posted["problems"] + paid["problems"]}
 
 
 def main(argv):
@@ -92,6 +111,10 @@ def main(argv):
         out = payable(sap, *rest)
     elif command == "receivable":
         out = receivable(sap, *rest)
+    elif command == "statements":
+        out = statements(sap, bank)
+    elif command == "run":
+        out = run(sap, bank)
     elif command == "morning":
         out = morning(sap, bank)
     else:
