@@ -6,7 +6,7 @@
 
 "One payment block to set or lift, and what became of it."
 struct Change
-    action::Symbol              # :block :guard :release
+    action::Symbol              # :block :release
     invoice::String             # SupplierInvoice/FiscalYear
     reference::String
     party::String
@@ -28,18 +28,8 @@ longer holds. A pure function; nothing is written.
   or to hold.
 - **What is already so is said, not done again:** a hold whose block is set
   comes back as `:already`.
-
-With `guard`, an open invoice whose payment the bank has accepted and not sent
-back is blocked too, as `:guard`. SAP keeps an item open until a statement
-clears it, and a payment run that starts before that statement would select
-it and pay it again. The statement then clears the item, block and all; if
-the payment comes back instead, the item is no longer at the bank and the
-block is lifted like any other the plan does not hold. It protects the run
-that follows it and no other. It is for a payment program that keeps no
-record of what it has sent: one that does, as mock-acme's register does,
-leaves it nothing to do.
 """
-function changes(snap::Snapshot, plan::Plan; guard::Bool = false)::Vector{Change}
+function changes(snap::Snapshot, plan::Plan)::Vector{Change}
     code = plan.forecast.scenario.holdcode
     holds = Dict(h.document => h for h in plan.holds)
     found = Change[]
@@ -50,15 +40,11 @@ function changes(snap::Snapshot, plan::Plan; guard::Bool = false)::Vector{Change
             action, item.invoice, item.reference, item.party, item.amount, until, outcome, ""))
         if hold !== nothing
             change(:block, hold.to, item.block == code ? :already : :wanted)
-        elseif guard && atbank(paymentfor(snap, item))
-            # Somebody else's block keeps a run off it as well as ours would.
-            item.block in ("", code) && change(:guard, nothing, item.block == code ? :already : :wanted)
         elseif item.block == code
             change(:release, nothing, :wanted)
         end
     end
-    order = Dict(:block => 1, :guard => 2, :release => 3)
-    sort!(found; by = c -> (order[c.action], something(c.until, Date(0)), c.reference))
+    sort!(found; by = c -> (c.action != :block, something(c.until, Date(0)), c.reference))
 end
 
 """
@@ -71,7 +57,7 @@ function apply(sap::String, wanted::Vector{Change}, code::String)::Vector{Change
     session = SapSession(sap)
     map(wanted) do c
         c.outcome == :wanted || return c
-        refusal = setblock!(session, c.invoice, c.action == :release ? "" : code)
+        refusal = setblock!(session, c.invoice, c.action == :block ? code : "")
         Change(c.action, c.invoice, c.reference, c.party, c.amount, c.until,
                refusal == "" ? :done : :refused, refusal)
     end
