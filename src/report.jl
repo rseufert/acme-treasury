@@ -63,7 +63,10 @@ end
 const OUTCOME = Dict(
     (:block, :wanted) => "to block", (:block, :already) => "already blocked",
     (:block, :done) => "blocked", (:release, :wanted) => "to release",
-    (:release, :done) => "released")
+    (:release, :done) => "released",
+    (:guard, :wanted) => "to block: at the bank, not yet cleared",
+    (:guard, :already) => "already blocked: at the bank, not yet cleared",
+    (:guard, :done) => "blocked: at the bank, not yet cleared")
 
 function report(io::IO, plan::Plan, wanted::Vector{Change}; applied::Bool = false,
                 trusting = nothing, together = nothing)
