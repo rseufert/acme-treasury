@@ -9,6 +9,7 @@ Base.@kwdef struct Scenario
     releaseblocked::Bool = false
     floor::Int = 0              # minor units; a closing balance under it is flagged
     holdcode::String = "T"      # the payment block that is the schedule's own
+    latecustomers::Int = -1     # how many customers may be late at once; -1 is all of them, together
 end
 
 "Every lateness a plan is held to: one, unless a range was asked for."
@@ -16,7 +17,7 @@ lateness(s::Scenario) = s.customerslate:max(s.customerslate, s.customerslateupto
 
 "The same scenario with every customer exactly `late` business days late."
 assuming(s::Scenario, late::Int) =
-    Scenario(s.days, late, late, s.releaseblocked, s.floor, s.holdcode)
+    Scenario(s.days, late, late, s.releaseblocked, s.floor, s.holdcode, -1)
 
 "Money expected to move: positive in, negative out."
 struct Flow
@@ -106,9 +107,11 @@ held(item::OpenItem, scenario::Scenario) =
 The forecast with some payables paid on a planned day instead of the day a run
 would pay them: `planned` is keyed by `OpenItem.document`. Also returns the
 payables a run would pay, each with the day it would - the ones a schedule may
-move.
+move. `own` gives a customer a lateness of their own, in place of the
+scenario's.
 """
-function project(snap::Snapshot, scenario::Scenario, planned::Dict{String,Date})
+function project(snap::Snapshot, scenario::Scenario, planned::Dict{String,Date},
+                 own::Dict{String,Int} = Dict{String,Int}())
     cal = snap.calendar
     payables = Tuple{OpenItem,Date}[]
     flows, asides = Flow[], Aside[]
@@ -168,17 +171,18 @@ function project(snap::Snapshot, scenario::Scenario, planned::Dict{String,Date})
                                   item.block != "" ? "block $(item.block) released" : ""))
             end
         else
+            late = get(own, item.party, scenario.customerslate)
             if occursin(item.number, quoted)
                 continue    # the bank holds a credit that names it
             elseif item.due === nothing
                 aside(:nodue, "no due date")
-            elseif addbusinessdays(cal, item.due, scenario.customerslate) < snap.today
+            elseif addbusinessdays(cal, item.due, late) < snap.today
                 # Not here by the day it was expected, even allowing for lateness.
                 aside(:overdue, "due $(item.due)")
             else
-                push!(flows, Flow(addbusinessdays(cal, item.due, scenario.customerslate), amount,
+                push!(flows, Flow(addbusinessdays(cal, item.due, late), amount,
                                   :receivable, item.number, item.party,
-                                  scenario.customerslate > 0 ? "due $(item.due), assumed late" : ""))
+                                  late > 0 ? "due $(item.due), assumed late" : ""))
             end
         end
     end
