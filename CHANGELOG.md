@@ -16,6 +16,10 @@ repository.
   whichever K customers are up to N business days late, each on their own.
   The output names the customers in the worst case, and says what the plan
   costs against trusting the due dates and against every customer late.
+- **`plan --guard`** (#18). With `--apply`, every open invoice whose payment
+  the bank has accepted and not sent back is blocked, so a payment run that
+  starts before the statement cannot pay it again. Off unless asked for. It is
+  a workaround for rseufert/mock-acme#2, not the fix.
 - Tests for `plan --apply` after the bank's cutoff.
 - **A third film** (#17), `docs/films/treasury_late.gif`: a customer pays a
   day late, under the plan that trusted them and the plan that did not.
