@@ -101,6 +101,7 @@ bin/acme-treasury --sap http://127.0.0.1:8000 --bank http://127.0.0.1:8080
 | `--account` | `ACME` | The account at the bank |
 | `--days` | `10` | Business days to look ahead |
 | `--customers-late` | `0` | Assume every customer pays this many business days late |
+| `--customers-late-up-to` | off | The plan keeps the floor for every lateness from `--customers-late` to this. Give the forecast the same |
 | `--release-blocked` | off | Assume every payment block is lifted |
 | `--floor` | `0.00` | Flag a closing balance under this |
 | `--plot` | off | Draw the closing balances in the terminal |
@@ -213,6 +214,32 @@ In SAP (nothing was changed: --apply does it)
   made again by the forecast's own arithmetic, in whole minor units, and
   checked against the floor before it is returned.
 
+- **Customers may be late.** The plan above trusts the customer's 42,500.00
+  to arrive on Tuesday the 13th, the day it is due. If it comes on Wednesday,
+  the block is lifted on Tuesday all the same and the account closes at
+  -16,450.00: the overdraft the plan was for, a day later. With
+  `--customers-late-up-to 1` the one plan keeps the floor whether customers pay
+  on the day or a business day late. The holds are the same in every case,
+  because a block is set before anyone knows which is true, and the output
+  says what the caution costs:
+
+  ```console
+  $ bin/acme-treasury plan --days 9 --floor 10000 --customers-late-up-to 1
+  Hold
+    INV-E             1000016              61,450.00  due Sat 10 Oct, from Mon 12 Oct to Wed 14 Oct, 2 days
+
+  Lowest: 26,050.00 on Wed 14 Oct, where it was -16,450.00 on Mon 12 Oct
+  At worst: 26,050.00 on Wed 14 Oct, with customers 1 day late
+  The caution costs 1 invoice-day more than trusting the due dates
+  ```
+
+  It is a plan, not a promise to wait: it is made again every morning, and on
+  the morning the money is at the bank the invoice goes.
+- **A receivable past its due date is still expected, inside the lateness
+  assumed.** With customers a day late, an invoice due yesterday is expected
+  today. A day after that it is overdue, as any receivable is when it has not
+  come by the day it was expected, and no plan counts on it.
+
 A plan is a list, and nothing pays later because a list says so: the payment
 run pays every open item that is due and not blocked. `plan --apply` makes the
 plan happen the way a user would, with a payment block on each held invoice,
@@ -280,6 +307,9 @@ floor holds, but that the bank's statements say it held.
 | The demo week without the schedule | The statement for Monday the 12th closes at -16,450.00: the problem the schedule is for is real |
 | The demo week with the schedule | Played with `plan --apply` before each run and a floor of 10,000.00, no statement closes under 26,050.00; INV-E is paid on Tuesday the 13th and every other invoice on its day; what is held only ever shrinks from one morning's plan to the next; and every morning's forecast, knowing its own holds, is the statements' |
 | A floor the week's money cannot keep | With a floor of 50,000.00, Monday's plan names 26,050.00 on Wednesday the 14th as the one day under it, and that day's statement is that figure; every other day keeps the floor |
+| The customer pays a day late, and the plan trusted the due date | The block is lifted on Tuesday the 13th, the money has not come, and that day's statement closes at -16,450.00 |
+| The customer pays a day late, and the plan allowed for it | With `--customers-late-up-to 1`, no statement closes under 26,050.00, INV-E is paid on Wednesday the 14th, and every morning's forecast for customers a day late is the statements' |
+| The customer pays on time, and the plan had allowed for a day late | Monday's plan holds INV-E to Wednesday; on Tuesday the money is at the bank and the invoice goes that day. The forecasts made before Tuesday were out for Tuesday by the invoice, and say so |
 | What Monday's plan cannot know | The closed account, with a floor: Monday holds a small invoice to make room for a large one the bank then refuses, so the hold was for nothing. Tuesday's plan is made from what happened, and its forecast is the statement |
 
 They need a Python with both mocks and mock-acme installed, as in the quick
@@ -373,6 +403,7 @@ script did itself.
 | Probabilities | Nothing in two deterministic mocks to fit them to. Scenarios are stated assumptions |
 | FX and more than one account | One account, one currency, as mock-bank's accounts are |
 | Direct debits and NACHA | The payment run this follows pays by `pain.001` credit transfer |
+| Each customer late on their own | A range of lateness is every customer late together, one case for each number of days. Each customer late or not on their own is two to the power of the customers, and a different method |
 | Early-payment discounts, late-payment penalties, supplier priority | The schedule costs lateness by amount and days alone; it reads no terms that price a late day and no mark on a supplier who should not be kept waiting |
 | Clearing customer items in SAP | Nothing in the chain does it yet, so a paid receivable stays open there and is recognised by the credit that names it |
 
