@@ -47,7 +47,7 @@ It needs Julia 1.13 and, to have something to forecast, the two mocks and
 [mock-acme](https://github.com/rseufert/mock-acme), whose payment run the demo's setup and the tests use:
 
 ```bash
-pip install mock-sap mock-bank git+https://github.com/rseufert/mock-acme
+pip install mock-sap mock-bank mock-acme
 julia --project=. -e 'using Pkg; Pkg.instantiate()'
 bin/demo
 ```
