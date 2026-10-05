@@ -1,6 +1,29 @@
 {
   "films": [
     {
+      "name": "treasury_late",
+      "path": "docs/films/treasury_late.gif",
+      "status": "finished",
+      "sha256": "2a97ba09b541bcf1fe3222c6e7118ab673a59649cc6ec2b897e252494bfd07e5",
+      "width": 800,
+      "height": 450,
+      "mocks": [
+        "mock-sap",
+        "mock-bank"
+      ],
+      "mock_versions": {
+        "mock-sap": "0.18.0",
+        "mock-bank": "0.7.0"
+      },
+      "driven_by": {
+        "mock-acme": "0.2.0"
+      },
+      "alt": "One week is played twice against mock-sap and mock-bank, with a floor of 10,000.00 under ACME's account and a customer who pays 42,500.00 on Wednesday the 14th, a day after it is due. In the first, acme-treasury's payment schedule trusts the due date: it holds an invoice, INV-E for 61,450.00, until Tuesday the 13th, lifts the block that morning, and the bank's statement for that day closes at -16,450.00, in red, 42,500.00 off the plan and under the floor. In the second the plan is asked to allow for customers a business day late, and holds the invoice until the 14th. All nine statements close where that plan said, none under the floor, and the invoice is paid two days late. The last line says the caution cost one invoice-day. The payments were made by mock-acme's payment run, and the capture script set up the invoices, paid in the customer's money on the 14th and moved both clocks.",
+      "caption": "a customer pays a day late: the plan that trusted them, and the one that did not",
+      "source": "acme-treasury film/capture_late.jl; clocks pinned 2026-10-05T09:00; the customer's credit posted on 2026-10-14",
+      "updated": "2026-10-05"
+    },
+    {
       "name": "treasury_plan",
       "path": "docs/films/treasury_plan.gif",
       "status": "finished",

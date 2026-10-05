@@ -17,6 +17,10 @@ repository.
   The output names the customers in the worst case, and says what the plan
   costs against trusting the due dates and against every customer late.
 - Tests for `plan --apply` after the bank's cutoff.
+- **A third film** (#17), `docs/films/treasury_late.gif`: a customer pays a
+  day late, under the plan that trusted them and the plan that did not.
+- `plan --json` has `cases`: each day's closing under the plan in every case
+  it was held to.
 
 ## [0.2.0] - 2026-10-05
 
