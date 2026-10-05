@@ -310,7 +310,18 @@ floor holds, but that the bank's statements say it held.
 | The customer pays a day late, and the plan trusted the due date | The block is lifted on Tuesday the 13th, the money has not come, and that day's statement closes at -16,450.00 |
 | The customer pays a day late, and the plan allowed for it | With `--customers-late-up-to 1`, no statement closes under 26,050.00, INV-E is paid on Wednesday the 14th, and every morning's forecast for customers a day late is the statements' |
 | The customer pays on time, and the plan had allowed for a day late | Monday's plan holds INV-E to Wednesday; on Tuesday the money is at the bank and the invoice goes that day. The forecasts made before Tuesday were out for Tuesday by the invoice, and say so |
+| After the cutoff, without the schedule | Every day played at 16:00, an hour after the cutoff: Monday's run settles on Tuesday, and Tuesday's statement closes at 5,000.00, as Monday's forecast said |
+| After the cutoff, with the schedule | The plan is in days the money moves: INV-X is held from Tuesday to Thursday, the block is lifted on Wednesday evening, that run's payment settles on Thursday, and no statement is under the floor |
 | What Monday's plan cannot know | The closed account, with a floor: Monday holds a small invoice to make room for a large one the bank then refuses, so the hold was for nothing. Tuesday's plan is made from what happened, and its forecast is the statement |
+
+The two after the cutoff each carry one test marked broken, and it is not
+this repository's: a run started before the statement that would clear an
+item pays the invoice again
+([mock-acme#2](https://github.com/rseufert/mock-acme/issues/2), which waits
+on [mock-sap#90](https://github.com/rseufert/mock-sap/issues/90)). Run once a
+morning before the cutoff, as everything else here is, the statement always
+comes first. Run after the cutoff every day, it does not, and neither the
+forecast nor the schedule prevents the second payment.
 
 They need a Python with both mocks and mock-acme installed, as in the quick
 start: `MOCK_PYTHON`, or `python3`.

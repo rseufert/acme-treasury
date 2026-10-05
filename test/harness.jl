@@ -35,11 +35,12 @@ function answers(url)
     false
 end
 
-function withmocks(body)
+"Both mocks, started at `start` on their clocks, for as long as `body` runs."
+function withmocks(body; start = START)
     sapport, bankport = freeports(2)
     quiet = (stdout = devnull, stderr = devnull)
-    mocks = [run(pipeline(`$PYTHON -m mocksap --port $sapport --clock $START -q`; quiet...); wait = false),
-             run(pipeline(`$PYTHON -m mockbank --port $bankport --clock $START -q`; quiet...); wait = false)]
+    mocks = [run(pipeline(`$PYTHON -m mocksap --port $sapport --clock $start -q`; quiet...); wait = false),
+             run(pipeline(`$PYTHON -m mockbank --port $bankport --clock $start -q`; quiet...); wait = false)]
     sap, bank = "http://127.0.0.1:$sapport", "http://127.0.0.1:$bankport"
     try
         answers(sap) && answers(bank) || error("the mocks did not start")
