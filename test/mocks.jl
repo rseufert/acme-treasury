@@ -34,24 +34,25 @@ end
 """
 Play from the mocks' Monday to `last`, a morning at a time, in the order the
 README gives: the bank's statements, then `plan --apply` when there is a
-`floor`, then mock-acme's payment run. `before(today)` is the world's turn
+`floor` or the `guard` is asked for, then mock-acme's payment run. `before(today)` is the world's turn
 each morning, `upto` is how late the plan allows customers to be, and `some`
 how many of them at once. Returns
 each morning's forecast and plan, the day each invoice was first paid, the
 invoices the run paid more than once, and what the statements say each day
 closed at.
 """
-function played(sap, bank; last, floor = nothing, upto = 0, some = -1, before = today -> nothing)
+function played(sap, bank; last, floor = nothing, upto = 0, some = -1, guard = false,
+                before = today -> nothing)
     forecasts, plans, paid, twice = Forecast[], Plan[], Dict{String,Date}(), String[]
     for today in Date(START[1:10]):Day(1):last
         before(today)
         world(sap, bank, "statements")
         days = count(d -> dayofweek(d) <= 5, today:Day(1):last)
         scenario = Scenario(; days, floor = something(floor, 0), customerslateupto = upto, latecustomers = some)
-        if floor !== nothing
+        if floor !== nothing || guard
             snap = snapshot(sap, bank, "ACME")
             plan = planpayments(snap, scenario)
-            written = apply(sap, changes(snap, plan), scenario.holdcode)
+            written = apply(sap, changes(snap, plan; guard), scenario.holdcode)
             any(c -> c.outcome == :refused, written) && error("SAP refused a block")
             push!(plans, plan)
         end
@@ -404,6 +405,10 @@ else
         # tests hold what is: the plan, the first payment, and the statements
         # up to the day a second payment lands. The second payment is marked
         # broken, and will say so here the day it stops happening.
+        #
+        # `plan --apply --guard` is this repository's second pair of eyes for
+        # it, and the tests after these two hold that with it the invoice is
+        # paid once.
         late_in_the_day(body) = withmocks(; start = "2026-10-05T16:00") do sap, bank
             world(sap, bank, "reset")
             world(sap, bank, "payable", GLOBEX, "INV-X", "120000.00", "2026-10-05")
@@ -439,6 +444,46 @@ else
                 @test_broken isempty(week.twice)        # Thursday's run pays it again
             end
         end
+        @testset "after the cutoff, with the guard: paid once" begin
+            late_in_the_day() do sap, bank
+                week = played(sap, bank; last = Date(2026, 10, 9), guard = true)
+                @test week.paid == Dict("INV-X" => Date(2026, 10, 5))
+                @test isempty(week.twice)
+                @test [week.actual[Date(2026, 10, d)] for d in 5:9] ==
+                      [125_000_00, 5_000_00, 5_000_00, 25_000_00, 25_000_00]
+                @test agrees(week)
+                # The statement cleared the item, block and all: nothing is left to lift.
+                @test all(i -> i.reference != "INV-X", snapshot(sap, bank, "ACME").items)
+            end
+        end
+
+        @testset "after the cutoff, with the schedule and the guard: held, then paid once" begin
+            late_in_the_day() do sap, bank
+                week = played(sap, bank; last = Date(2026, 10, 9), floor = 10_000_00, guard = true)
+                @test week.paid == Dict("INV-X" => Date(2026, 10, 7))
+                @test isempty(week.twice)
+                @test [week.actual[Date(2026, 10, d)] for d in 5:9] ==
+                      [125_000_00, 125_000_00, 125_000_00, 25_000_00, 25_000_00]
+                @test agrees(week)
+            end
+        end
+
+        @testset "under the guard, a payment that comes back is paid again, once" begin
+            withmocks(; start = "2026-10-05T16:00") do sap, bank
+                world(sap, bank, "reset")
+                world(sap, bank, "payable", GLOBEX, "INV-X", "120000.00", "2026-10-05")
+                bankpatch(bank, "/_mock/accounts/ACME",
+                          Dict("behaviour" => "return-later", "parameters" => Dict("days" => 2)))
+                week = played(sap, bank; last = Date(2026, 10, 13), guard = true)
+                # Out on Tuesday, back on Thursday, and the run after the statement
+                # that reopened it sends it again: out on Monday, and not again.
+                @test week.paid == Dict("INV-X" => Date(2026, 10, 5))
+                @test week.twice == ["INV-X"]
+                @test [week.actual[d] for d in sort(collect(keys(week.actual)))] ==
+                      [125_000_00, 5_000_00, 5_000_00, 125_000_00, 125_000_00, 5_000_00, 5_000_00]
+            end
+        end
+
         # Two customers, Ann and Bob, each owe money on Tuesday the 6th, and two
         # invoices are due that day which need both. One of them pays a day late.
         ann, bob = CUSTOMER, "1000003"
