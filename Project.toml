@@ -1,0 +1,26 @@
+name = "MockTreasury"
+uuid = "5ffed0dd-fdad-4193-99e4-e8cc7f783426"
+version = "0.1.0"
+authors = ["Rick Seufert"]
+
+[deps]
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+EzXML = "8f5d6c58-4d21-5cfd-889c-e3ad7ee6a615"
+HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+UnicodePlots = "b8865327-cd53-5732-bb35-84acbb429228"
+
+[compat]
+julia = "1.13"
+Dates = "1.11.0"
+EzXML = "1.2.3"
+HTTP = "2.8.0"
+JSON = "1.10.0"
+UnicodePlots = "3.9.0"
+
+[extras]
+Sockets = "6462fe0b-24de-5631-8697-dd941f90decc"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Sockets", "Test"]
