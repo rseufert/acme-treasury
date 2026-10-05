@@ -35,11 +35,13 @@ end
 Play from the mocks' Monday to `last`, a morning at a time, in the order the
 README gives: the bank's statements, then `plan --apply` when there is a
 `floor`, then mock-acme's payment run. `before(today)` is the world's turn
-each morning, and `upto` is how late the plan allows customers to be. Returns each morning's forecast and plan, the day each invoice
-was paid, and what the statements say each day closed at.
+each morning, and `upto` is how late the plan allows customers to be. Returns
+each morning's forecast and plan, the day each invoice was first paid, the
+invoices the run paid more than once, and what the statements say each day
+closed at.
 """
 function played(sap, bank; last, floor = nothing, upto = 0, before = today -> nothing)
-    forecasts, plans, paid = Forecast[], Plan[], Dict{String,Date}()
+    forecasts, plans, paid, twice = Forecast[], Plan[], Dict{String,Date}(), String[]
     for today in Date(START[1:10]):Day(1):last
         before(today)
         world(sap, bank, "statements")
@@ -54,11 +56,12 @@ function played(sap, bank; last, floor = nothing, upto = 0, before = today -> no
         end
         push!(forecasts, forecast(snapshot(sap, bank, "ACME"), scenario))
         for item in world(sap, bank, "run")["items"]
-            item["status"] == "accepted" && (paid[item["reference"]] = today)
+            item["status"] == "accepted" || continue
+            haskey(paid, item["reference"]) ? push!(twice, item["reference"]) : (paid[item["reference"]] = today)
         end
         night(sap, bank)
     end
-    (; forecasts, plans, paid, actual = statements(bank))
+    (; forecasts, plans, paid, twice, actual = statements(bank))
 end
 
 "Every closing balance every morning's forecast gave is that day's statement."
@@ -195,16 +198,17 @@ else
                 # The second time there is nothing to do.
                 @test done() == [(:block, "INV-E", :already)]
 
-                # Plan, apply, then the run: the order the README gives.
+                # The statements, the plan applied, then the run: the order the README gives.
                 paid = String[]
                 mornings = Forecast[]
                 for today in Date(2026, 10, 5):Day(1):Date(2026, 10, 7)
                     today == Date(2026, 10, 7) && bankpost(bank, "/_mock/credits",
                         Dict("account" => "ACME", "amount" => 4_250_000, "note" => "your invoice $owed",
                              "debtor" => Dict("name" => "Customer Ltd", "iban" => "NL14MOCK0000000002")))
+                    world(sap, bank, "statements")
                     today == Date(2026, 10, 5) || @test acme("--apply") == 0
                     push!(mornings, forecast(snapshot(sap, bank, "ACME"), scenario))
-                    run = world(sap, bank, "morning")
+                    run = world(sap, bank, "run")
                     append!(paid, [i["reference"] for i in run["items"] if i["status"] == "accepted"])
                     today == Date(2026, 10, 6) && @test blocks()["INV-E"] == "T"
                     night(sap, bank)
@@ -387,6 +391,51 @@ else
                 @test compared(week.forecasts[1], week.actual)[7] ==
                       (Date(2026, 10, 13), 87_500_00, 26_050_00)
                 @test agrees(week, week.forecasts[9:end])
+            end
+        end
+        # Every day here is played at 16:00, an hour after the bank's cutoff, so
+        # what a run sends settles on the next business day.
+        #
+        # It also means the next day's run starts before the statement that
+        # would clear the item, and mock-acme's run then pays the invoice again:
+        # rseufert/mock-acme#2, the first of its three, which waits on
+        # rseufert/mock-sap#90. That is not this repository's to fix, so these
+        # tests hold what is: the plan, the first payment, and the statements
+        # up to the day a second payment lands. The second payment is marked
+        # broken, and will say so here the day it stops happening.
+        late_in_the_day(body) = withmocks(; start = "2026-10-05T16:00") do sap, bank
+            world(sap, bank, "reset")
+            world(sap, bank, "payable", GLOBEX, "INV-X", "120000.00", "2026-10-05")
+            bankpost(bank, "/_mock/credits", Dict("account" => "ACME", "amount" => 2_000_000,
+                     "value_date" => "2026-10-08", "note" => "PAYMENT", "debtor" => PAYER))
+            body(sap, bank)
+        end
+
+        @testset "after the cutoff, without the schedule: paid today, short tomorrow" begin
+            late_in_the_day() do sap, bank
+                week = played(sap, bank; last = Date(2026, 10, 6))
+                @test week.forecasts[1].pastcutoff
+                @test week.paid == Dict("INV-X" => Date(2026, 10, 5))
+                @test [week.actual[Date(2026, 10, d)] for d in 5:6] == [125_000_00, 5_000_00]
+                @test agrees(week)
+                @test_broken isempty(week.twice)        # Tuesday's run pays it again
+            end
+        end
+
+        @testset "after the cutoff, with the schedule: the block is lifted the evening before" begin
+            late_in_the_day() do sap, bank
+                week = played(sap, bank; last = Date(2026, 10, 8), floor = 10_000_00)
+                # The plan is in days the money moves: held from Tuesday, when
+                # Monday's run would have settled, to Thursday, when the credit books.
+                @test [(h.reference, h.from, h.to, h.days) for h in week.plans[1].holds] ==
+                      [("INV-X", Date(2026, 10, 6), Date(2026, 10, 8), 2)]
+                # So the run that pays it is Wednesday's, after that day's cutoff.
+                @test week.paid == Dict("INV-X" => Date(2026, 10, 7))
+                @test isempty(holding(week.plans[3]))
+                @test [week.actual[Date(2026, 10, d)] for d in 5:8] ==
+                      [125_000_00, 125_000_00, 125_000_00, 25_000_00]
+                @test agrees(week)
+                @test_broken isempty(week.twice)        # Thursday's run pays it again
             end
         end
     end
