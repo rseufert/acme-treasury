@@ -324,7 +324,7 @@
     },
     {
       "account": "ACME",
-      "asOf": "2026-10-07T09:00:01",
+      "asOf": "2026-10-07T09:00:02",
       "currency": "EUR",
       "days": [
         {
@@ -465,7 +465,7 @@
     },
     {
       "account": "ACME",
-      "asOf": "2026-10-08T09:00:01",
+      "asOf": "2026-10-08T09:00:02",
       "currency": "EUR",
       "days": [
         {
@@ -591,7 +591,7 @@
     },
     {
       "account": "ACME",
-      "asOf": "2026-10-09T09:00:01",
+      "asOf": "2026-10-09T09:00:02",
       "currency": "EUR",
       "days": [
         {
@@ -710,7 +710,7 @@
     },
     {
       "account": "ACME",
-      "asOf": "2026-10-10T09:00:01",
+      "asOf": "2026-10-10T09:00:02",
       "currency": "EUR",
       "days": [
         {
@@ -1389,7 +1389,7 @@
     }
   ],
   "versions": {
-    "mock-acme": "0.1.0.dev0",
+    "mock-acme": "0.1.0",
     "mock-bank": "0.7.0",
     "mock-sap": "0.17.1"
   }
