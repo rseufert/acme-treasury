@@ -16,28 +16,22 @@ repository.
   whichever K customers are up to N business days late, each on their own.
   The output names the customers in the worst case, and says what the plan
   costs against trusting the due dates and against every customer late.
-- **`plan --guard`** (#18). With `--apply`, every open invoice whose payment
-  the bank has accepted and not sent back is blocked, so a payment run that
-  starts before the statement cannot pay it again. Off unless asked for. It is
-  for a payment program that keeps no record of what it has sent; mock-acme's
-  does, from 0.2.0, and with its register the guard has nothing to do.
-
-### Fixed
-
-- **A payment is an invoice's by more than its number.** The forecast, and the
-  guard, joined an open item to a bank payment on the `EndToEndId` alone, so a
-  second invoice with a number already paid was left out of the forecast as
-  "at the bank", and under `--guard` would have been blocked every morning.
-  The payment must now also be for the item's amount and currency, and not
-  older than the item.
-- The tests' payment run keeps mock-acme's register in a file, so a run after
-  the cutoff no longer pays an invoice twice. Two tests were marked broken for
-  that, and were this repository's helper, not mock-acme.
 - Tests for `plan --apply` after the bank's cutoff.
 - **A third film** (#17), `docs/films/treasury_late.gif`: a customer pays a
   day late, under the plan that trusted them and the plan that did not.
 - `plan --json` has `cases`: each day's closing under the plan in every case
   it was held to.
+
+### Fixed
+
+- **A payment is an invoice's by more than its number.** The forecast joined
+  an open item to a bank payment on the `EndToEndId` alone, so a second
+  invoice with a number already paid was left out of the forecast as "at the
+  bank". The payment must now also be for the item's amount and currency, and
+  not older than the item.
+- The tests' payment run keeps mock-acme's register in a file, so a run after
+  the cutoff no longer pays an invoice twice. Two tests were marked broken for
+  that, and it was this repository's helper, not mock-acme.
 
 ## [0.2.0] - 2026-10-05
 

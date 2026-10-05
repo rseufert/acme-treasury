@@ -1,5 +1,5 @@
 const USAGE = """
-usage: acme-treasury [plan [--apply] [--guard]] [--sap URL] [--bank URL] [--account ID]
+usage: acme-treasury [plan [--apply]] [--sap URL] [--bank URL] [--account ID]
                      [--days N] [--customers-late N] [--release-blocked]
                      [--customers-late-up-to N] [--late-customers K]
                      [--floor AMOUNT] [--hold-code C]
@@ -12,9 +12,6 @@ no day closes under the floor.
   plan                 print the payment schedule instead of the forecast
   --apply              with plan: set and lift payment blocks in SAP to match.
                        Without it nothing is written
-  --guard              with plan: also block every open invoice whose payment the
-                       bank has and has not sent back, so the next payment run
-                       cannot pay it again before a statement clears it
   --sap URL            mock-sap (default: \$SAP_URL or http://127.0.0.1:8000)
   --bank URL           mock-bank (default: \$BANK_URL or http://127.0.0.1:8080)
   --account ID         the account at the bank (default: ACME)
@@ -40,7 +37,7 @@ function main(args::Vector{String} = ARGS)::Int
     sap = get(ENV, "SAP_URL", "http://127.0.0.1:8000")
     bank = get(ENV, "BANK_URL", "http://127.0.0.1:8080")
     account, days, late, release, floor, plot, json = "ACME", 10, 0, false, 0, false, false
-    holdcode, writes, upto, some, guard = "T", false, 0, -1, false
+    holdcode, writes, upto, some = "T", false, 0, -1
     args = copy(args)
     planning = !isempty(args) && first(args) == "plan"
     planning && popfirst!(args)
@@ -78,8 +75,6 @@ function main(args::Vector{String} = ARGS)::Int
                 length(holdcode) == 1 || throw(ArgumentError("--hold-code is one character"))
             elseif flag == "--apply" && planning
                 writes = true
-            elseif flag == "--guard" && planning
-                guard = true
             elseif flag == "--plot" && !planning
                 plot = true
             elseif flag == "--json"
@@ -108,7 +103,7 @@ function main(args::Vector{String} = ARGS)::Int
                 (trusting = planpayments(snap, assuming(scenario, late)))
             some >= 0 && (together = planpayments(snap, Scenario(; days, customerslate = late,
                 customerslateupto = upto, releaseblocked = release, floor, holdcode)))
-            wanted = changes(snap, plan; guard)
+            wanted = changes(snap, plan)
             plan, writes ? apply(sap, wanted, holdcode) : wanted
         else
             forecast(snap, scenario), Change[]
