@@ -16,6 +16,55 @@ function compared(f, actual)
     [(d.day, d.closing, actual[d.day]) for d in f.days if haskey(actual, d.day)]
 end
 
+const PAYER = Dict("name" => "Customer Ltd", "iban" => "NL14MOCK0000000002")
+
+"The week `bin/demo` forecasts. Returns the document the customer will quote."
+function demoweek(sap, bank)
+    world(sap, bank, "reset")
+    world(sap, bank, "payable", GLOBEX, "INV-A", "1200.00", "2026-10-05")
+    world(sap, bank, "payable", UMBRELLA, "INV-B", "80800.00", "2026-10-07")
+    world(sap, bank, "payable", GLOBEX, "INV-C", "50.00", "2026-10-05", "A")
+    world(sap, bank, "payable", UMBRELLA, "INV-E", "61450.00", "2026-10-10")       # a Saturday
+    owed = world(sap, bank, "receivable", CUSTOMER, "42500.00", "2026-10-13")["ACCOUNTINGDOCUMENT"]
+    bankpost(bank, "/_mock/credits", Dict("account" => "ACME", "amount" => 200_000,
+             "value_date" => "2026-10-06", "note" => "PAYMENT", "debtor" => PAYER))
+    owed
+end
+
+"""
+Play from the mocks' Monday to `last`, a morning at a time, in the order the
+README gives: the bank's statements, then `plan --apply` when there is a
+`floor`, then mock-acme's payment run. `before(today)` is the world's turn
+each morning. Returns each morning's forecast and plan, the day each invoice
+was paid, and what the statements say each day closed at.
+"""
+function played(sap, bank; last, floor = nothing, before = today -> nothing)
+    forecasts, plans, paid = Forecast[], Plan[], Dict{String,Date}()
+    for today in Date(START[1:10]):Day(1):last
+        before(today)
+        world(sap, bank, "statements")
+        days = count(d -> dayofweek(d) <= 5, today:Day(1):last)
+        scenario = Scenario(; days, floor = something(floor, 0))
+        if floor !== nothing
+            snap = snapshot(sap, bank, "ACME")
+            plan = planpayments(snap, scenario)
+            written = apply(sap, changes(snap, plan), scenario.holdcode)
+            any(c -> c.outcome == :refused, written) && error("SAP refused a block")
+            push!(plans, plan)
+        end
+        push!(forecasts, forecast(snapshot(sap, bank, "ACME"), scenario))
+        for item in world(sap, bank, "run")["items"]
+            item["status"] == "accepted" && (paid[item["reference"]] = today)
+        end
+        night(sap, bank)
+    end
+    (; forecasts, plans, paid, actual = statements(bank))
+end
+
+"Every closing balance every morning's forecast gave is that day's statement."
+agrees(week) = all(all(row -> row[2] == row[3], compared(f, week.actual)) for f in week.forecasts)
+holding(plan) = Set(h.reference for h in plan.holds)
+
 if !havemocks()
     @warn "mock-sap, mock-bank and mock-acme are not installed for $PYTHON, so the forecast was " *
           "not checked against them. See the README's Tests section, or set MOCK_PYTHON."
@@ -198,6 +247,87 @@ else
                 @test acme() == 2
                 @test acme() == 1
                 @test all(c -> c.outcome == :already, wanted())
+            end
+        end
+        @testset "the demo week without the schedule: the overdraft is real" begin
+            withmocks() do sap, bank
+                owed = demoweek(sap, bank)
+                week = played(sap, bank; last = Date(2026, 10, 14), before = today ->
+                    today == Date(2026, 10, 13) && bankpost(bank, "/_mock/credits",
+                        Dict("account" => "ACME", "amount" => 4_250_000,
+                             "note" => "your invoice $owed", "debtor" => PAYER)))
+                @test week.actual[Date(2026, 10, 12)] == -16_450_00
+                @test week.actual[Date(2026, 10, 13)] == 26_050_00
+                @test week.paid["INV-E"] == Date(2026, 10, 12)
+                @test agrees(week)
+            end
+        end
+
+        @testset "the demo week with the schedule: the statements keep the floor" begin
+            withmocks() do sap, bank
+                owed = demoweek(sap, bank)
+                week = played(sap, bank; last = Date(2026, 10, 14), floor = 10_000_00, before = today ->
+                    today == Date(2026, 10, 13) && bankpost(bank, "/_mock/credits",
+                        Dict("account" => "ACME", "amount" => 4_250_000,
+                             "note" => "your invoice $owed", "debtor" => PAYER)))
+                @test length(week.actual) == 8
+                @test minimum(values(week.actual)) == 26_050_00
+                @test week.actual[Date(2026, 10, 12)] == 45_000_00
+                # One invoice a business day late, and nothing else moved.
+                @test week.paid == Dict("INV-A" => Date(2026, 10, 5), "INV-B" => Date(2026, 10, 7),
+                                        "INV-E" => Date(2026, 10, 13))
+                # The forecast knows its own holds: every morning's is the statements'.
+                @test agrees(week)
+                # Monday's plan survives the week: what is held only ever shrinks.
+                @test holding(week.plans[1]) == Set(["INV-E"])
+                @test all(issubset(holding(b), holding(a)) for (a, b) in zip(week.plans, week.plans[2:end]))
+                @test holding(week.plans[8]) == Set(["INV-E"])      # Monday the 12th, its last day held
+                @test isempty(holding(week.plans[9]))
+                @test all(i -> i.block == (i.reference == "INV-C" ? "A" : ""),
+                          filter(i -> i.kind == :payable, snapshot(sap, bank, "ACME").items))
+            end
+        end
+
+        @testset "a floor the week's money cannot keep: the breach the plan named, on its day" begin
+            withmocks() do sap, bank
+                owed = demoweek(sap, bank)
+                week = played(sap, bank; last = Date(2026, 10, 14), floor = 50_000_00, before = today ->
+                    today == Date(2026, 10, 13) && bankpost(bank, "/_mock/credits",
+                        Dict("account" => "ACME", "amount" => 4_250_000,
+                             "note" => "your invoice $owed", "debtor" => PAYER)))
+                short = shortfall(week.plans[1])
+                @test (short.day, short.closing) == (Date(2026, 10, 14), 26_050_00)
+                @test week.actual[short.day] == short.closing
+                @test all(closing >= 50_000_00 for (day, closing) in week.actual if day != short.day)
+                # Only the large invoice has to wait: with it held, INV-E can go on its day.
+                @test week.paid == Dict("INV-A" => Date(2026, 10, 5), "INV-B" => Date(2026, 10, 14),
+                                        "INV-E" => Date(2026, 10, 12))
+                @test agrees(week)
+            end
+        end
+
+        @testset "what Monday's plan cannot know: it holds for a payment the bank refuses" begin
+            withmocks() do sap, bank
+                world(sap, bank, "reset")
+                world(sap, bank, "payable", INITECH, "INV-D", "100000.00", "2026-10-05")    # the closed account
+                world(sap, bank, "payable", GLOBEX, "INV-X", "30000.00", "2026-10-05")
+                bankpost(bank, "/_mock/credits", Dict("account" => "ACME", "amount" => 2_000_000,
+                         "value_date" => "2026-10-06", "note" => "PAYMENT", "debtor" => PAYER))
+                week = played(sap, bank; last = Date(2026, 10, 6), floor = 10_000_00)
+                monday, tuesday = week.plans
+                # Monday: paying both goes under, so the smaller waits a day for the credit.
+                @test [d.closing for d in monday.before.days] == [-5_000_00, 15_000_00]
+                @test holding(monday) == Set(["INV-X"])
+                @test [d.closing for d in monday.forecast.days] == [25_000_00, 15_000_00]
+                # The bank refused the large one, so the hold was for nothing, and
+                # Monday's statement is out by the invoice.
+                @test week.actual[Date(2026, 10, 5)] == 125_000_00
+                # Tuesday's plan is made from what happened, and is right.
+                @test isempty(holding(tuesday))
+                @test [(a.reason, a.amount) for a in tuesday.forecast.asides if a.reference == "INV-D"] ==
+                      [(:rejected, -100_000_00)]
+                @test week.paid == Dict("INV-X" => Date(2026, 10, 6))
+                @test week.actual[Date(2026, 10, 6)] == 115_000_00 == tuesday.forecast.days[1].closing
             end
         end
     end

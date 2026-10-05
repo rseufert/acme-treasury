@@ -260,7 +260,8 @@ forecast is a pure function of one, so these need nothing running.
 `test/mocks.jl` starts both mocks on a pinned clock and plays time forward.
 The run each morning is mock-acme's `payment_run`, unchanged, so the forecast
 is held to the reference integration and not to a chain written to agree with
-it.
+it. A schedule is held to the same thing: not that the solver says the
+floor holds, but that the bank's statements say it held.
 
 | Test | What it proves |
 | --- | --- |
@@ -268,6 +269,12 @@ it.
 | A return is forecast once the bank knows of it | Under `return-later`, Tuesday's forecast has the money back on Thursday and gone again on Friday, and the statements agree |
 | What Monday cannot know | The closed account above: Monday is out by the invoice, Tuesday is not |
 | A side that is down is named | SAP or the bank not answering is said in words, with exit status 2 |
+| A plan applied in SAP | A dry run leaves SAP as it was; `--apply` blocks the held invoice and the second apply changes nothing; another reason's block is never touched; the block is lifted on its day and the run then pays it |
+| A write SAP refuses is named | One `PATCH` answered 423 is reported with what SAP said, the other is still written, and the exit status is 2 |
+| The demo week without the schedule | The statement for Monday the 12th closes at -16,450.00: the problem the schedule is for is real |
+| The demo week with the schedule | Played with `plan --apply` before each run and a floor of 10,000.00, no statement closes under 26,050.00; INV-E is paid on Tuesday the 13th and every other invoice on its day; what is held only ever shrinks from one morning's plan to the next; and every morning's forecast, knowing its own holds, is the statements' |
+| A floor the week's money cannot keep | With a floor of 50,000.00, Monday's plan names 26,050.00 on Wednesday the 14th as the one day under it, and that day's statement is that figure; every other day keeps the floor |
+| What Monday's plan cannot know | The closed account, with a floor: Monday holds a small invoice to make room for a large one the bank then refuses, so the hold was for nothing. Tuesday's plan is made from what happened, and its forecast is the statement |
 
 They need a Python with both mocks and mock-acme installed, as in the quick
 start: `MOCK_PYTHON`, or `python3`.
