@@ -172,7 +172,13 @@ on its due date. That is what `payment_run` in
 it: which invoices to hold, and until which business day, so that no day
 closes under the floor. It is a small mixed-integer program, written in
 [JuMP](https://jump.dev) and solved by [HiGHS](https://highs.dev), and like the
-forecast it is a pure function of a snapshot. On the demo week:
+forecast it is a pure function of a snapshot.
+
+![Monday's forecast is drawn and dips under a floor of 10,000.00 on Monday the 12th, in red. The plan holds INV-E until Tuesday the 13th and the line is redrawn without the dip. Eight statements then land on the planned line, none under the floor](docs/plan.gif)
+
+*mock-sap 0.17.1, mock-bank 0.7.0 and mock-acme 0.1.0, with `plan --apply` before each morning's payment run: `film/capture_plan.jl`. Every block is a `camt.053`.*
+
+On the demo week:
 
 ```console
 $ bin/acme-treasury plan --days 8 --floor 10000
@@ -295,6 +301,16 @@ julia --project=film -e 'using Pkg; Pkg.instantiate()'          # once: Makie is
 julia --project=film film/render.jl                             # docs/week.gif and docs/week.mp4
 ```
 
+The film under [The payment schedule](#the-payment-schedule) is made the same
+way, from a run of its own: the demo week with a floor of 10,000.00, and
+`plan --apply` before each morning's payment run. The renderer calls no
+solver; the plan it draws is the one the capture recorded.
+
+```bash
+julia --project=. film/capture_plan.jl                          # film/plan.json
+julia --project=film film/render_plan.jl                        # docs/plan.gif and docs/plan.mp4
+```
+
 Makie is in its own environment under `film/`, so the forecast does not take
 it as a dependency. The renderer needs the VT323 font:
 `brew install --cask font-vt323`.
@@ -304,7 +320,9 @@ supplier's account is closed at the bank and SAP does not know, so Monday's
 forecast expects to pay 9,300.00 that the bank refuses. A statement that
 closes where the forecast said is a green block on the line; one that does
 not is red, with the distance drawn, and the next morning's forecast replaces
-the line.
+the line. In the second, the stretch of the forecast under the floor is red
+until the plan replaces it. The held invoice is never red: holding it is the
+fix.
 
 ## Layout
 
@@ -318,7 +336,7 @@ the line.
 | `src/calendar.jl`, `src/money.jl` | Business days, and amounts as whole minor units |
 | `src/report.jl`, `src/cli.jl` | The table, the plot, the JSON and the command line |
 | `test/world.py`, `test/harness.jl` | The suppliers, the customers and the morning's payment run; starting both mocks |
-| `film/` | The capture of a week, and the film drawn from it |
+| `film/` | The captures of the two weeks, and the films drawn from them; `look.jl` is what the two share |
 
 ## Out of scope
 

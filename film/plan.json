@@ -1,0 +1,957 @@
+{
+  "account": "ACME",
+  "currency": "EUR",
+  "floor": 1000000,
+  "plans": [
+    {
+      "account": "ACME",
+      "applied": true,
+      "asOf": "2026-10-05T09:00:00",
+      "changes": [
+        {
+          "action": "block",
+          "amount": 6145000,
+          "invoice": "5100000004/2026",
+          "message": "",
+          "outcome": "done",
+          "party": "1000016",
+          "reference": "INV-E",
+          "until": "2026-10-13"
+        }
+      ],
+      "currency": "EUR",
+      "days": [
+        {
+          "closing": 12380000,
+          "day": "2026-10-05",
+          "in": 0,
+          "opening": 12500000,
+          "out": -120000
+        },
+        {
+          "closing": 12580000,
+          "day": "2026-10-06",
+          "in": 200000,
+          "opening": 12380000,
+          "out": 0
+        },
+        {
+          "closing": 4500000,
+          "day": "2026-10-07",
+          "in": 0,
+          "opening": 12580000,
+          "out": -8080000
+        },
+        {
+          "closing": 4500000,
+          "day": "2026-10-08",
+          "in": 0,
+          "opening": 4500000,
+          "out": 0
+        },
+        {
+          "closing": 4500000,
+          "day": "2026-10-09",
+          "in": 0,
+          "opening": 4500000,
+          "out": 0
+        },
+        {
+          "closing": 4500000,
+          "day": "2026-10-12",
+          "in": 0,
+          "opening": 4500000,
+          "out": 0
+        },
+        {
+          "closing": 2605000,
+          "day": "2026-10-13",
+          "in": 4250000,
+          "opening": 4500000,
+          "out": -6145000
+        },
+        {
+          "closing": 2605000,
+          "day": "2026-10-14",
+          "in": 0,
+          "opening": 2605000,
+          "out": 0
+        }
+      ],
+      "floor": 1000000,
+      "holds": [
+        {
+          "amount": 6145000,
+          "days": 1,
+          "due": "2026-10-10",
+          "from": "2026-10-12",
+          "party": "1000016",
+          "reference": "INV-E",
+          "to": "2026-10-13"
+        }
+      ],
+      "lowest": {
+        "closing": 2605000,
+        "day": "2026-10-13"
+      },
+      "lowestBefore": {
+        "closing": -1645000,
+        "day": "2026-10-12"
+      },
+      "shortfall": null
+    },
+    {
+      "account": "ACME",
+      "applied": true,
+      "asOf": "2026-10-06T09:00:02",
+      "changes": [
+        {
+          "action": "block",
+          "amount": 6145000,
+          "invoice": "5100000004/2026",
+          "message": "",
+          "outcome": "already",
+          "party": "1000016",
+          "reference": "INV-E",
+          "until": "2026-10-13"
+        }
+      ],
+      "currency": "EUR",
+      "days": [
+        {
+          "closing": 12580000,
+          "day": "2026-10-06",
+          "in": 0,
+          "opening": 12580000,
+          "out": 0
+        },
+        {
+          "closing": 4500000,
+          "day": "2026-10-07",
+          "in": 0,
+          "opening": 12580000,
+          "out": -8080000
+        },
+        {
+          "closing": 4500000,
+          "day": "2026-10-08",
+          "in": 0,
+          "opening": 4500000,
+          "out": 0
+        },
+        {
+          "closing": 4500000,
+          "day": "2026-10-09",
+          "in": 0,
+          "opening": 4500000,
+          "out": 0
+        },
+        {
+          "closing": 4500000,
+          "day": "2026-10-12",
+          "in": 0,
+          "opening": 4500000,
+          "out": 0
+        },
+        {
+          "closing": 2605000,
+          "day": "2026-10-13",
+          "in": 4250000,
+          "opening": 4500000,
+          "out": -6145000
+        },
+        {
+          "closing": 2605000,
+          "day": "2026-10-14",
+          "in": 0,
+          "opening": 2605000,
+          "out": 0
+        }
+      ],
+      "floor": 1000000,
+      "holds": [
+        {
+          "amount": 6145000,
+          "days": 1,
+          "due": "2026-10-10",
+          "from": "2026-10-12",
+          "party": "1000016",
+          "reference": "INV-E",
+          "to": "2026-10-13"
+        }
+      ],
+      "lowest": {
+        "closing": 2605000,
+        "day": "2026-10-13"
+      },
+      "lowestBefore": {
+        "closing": -1645000,
+        "day": "2026-10-12"
+      },
+      "shortfall": null
+    },
+    {
+      "account": "ACME",
+      "applied": true,
+      "asOf": "2026-10-07T09:00:03",
+      "changes": [
+        {
+          "action": "block",
+          "amount": 6145000,
+          "invoice": "5100000004/2026",
+          "message": "",
+          "outcome": "already",
+          "party": "1000016",
+          "reference": "INV-E",
+          "until": "2026-10-13"
+        }
+      ],
+      "currency": "EUR",
+      "days": [
+        {
+          "closing": 4500000,
+          "day": "2026-10-07",
+          "in": 0,
+          "opening": 12580000,
+          "out": -8080000
+        },
+        {
+          "closing": 4500000,
+          "day": "2026-10-08",
+          "in": 0,
+          "opening": 4500000,
+          "out": 0
+        },
+        {
+          "closing": 4500000,
+          "day": "2026-10-09",
+          "in": 0,
+          "opening": 4500000,
+          "out": 0
+        },
+        {
+          "closing": 4500000,
+          "day": "2026-10-12",
+          "in": 0,
+          "opening": 4500000,
+          "out": 0
+        },
+        {
+          "closing": 2605000,
+          "day": "2026-10-13",
+          "in": 4250000,
+          "opening": 4500000,
+          "out": -6145000
+        },
+        {
+          "closing": 2605000,
+          "day": "2026-10-14",
+          "in": 0,
+          "opening": 2605000,
+          "out": 0
+        }
+      ],
+      "floor": 1000000,
+      "holds": [
+        {
+          "amount": 6145000,
+          "days": 1,
+          "due": "2026-10-10",
+          "from": "2026-10-12",
+          "party": "1000016",
+          "reference": "INV-E",
+          "to": "2026-10-13"
+        }
+      ],
+      "lowest": {
+        "closing": 2605000,
+        "day": "2026-10-13"
+      },
+      "lowestBefore": {
+        "closing": -1645000,
+        "day": "2026-10-12"
+      },
+      "shortfall": null
+    },
+    {
+      "account": "ACME",
+      "applied": true,
+      "asOf": "2026-10-08T09:00:03",
+      "changes": [
+        {
+          "action": "block",
+          "amount": 6145000,
+          "invoice": "5100000004/2026",
+          "message": "",
+          "outcome": "already",
+          "party": "1000016",
+          "reference": "INV-E",
+          "until": "2026-10-13"
+        }
+      ],
+      "currency": "EUR",
+      "days": [
+        {
+          "closing": 4500000,
+          "day": "2026-10-08",
+          "in": 0,
+          "opening": 4500000,
+          "out": 0
+        },
+        {
+          "closing": 4500000,
+          "day": "2026-10-09",
+          "in": 0,
+          "opening": 4500000,
+          "out": 0
+        },
+        {
+          "closing": 4500000,
+          "day": "2026-10-12",
+          "in": 0,
+          "opening": 4500000,
+          "out": 0
+        },
+        {
+          "closing": 2605000,
+          "day": "2026-10-13",
+          "in": 4250000,
+          "opening": 4500000,
+          "out": -6145000
+        },
+        {
+          "closing": 2605000,
+          "day": "2026-10-14",
+          "in": 0,
+          "opening": 2605000,
+          "out": 0
+        }
+      ],
+      "floor": 1000000,
+      "holds": [
+        {
+          "amount": 6145000,
+          "days": 1,
+          "due": "2026-10-10",
+          "from": "2026-10-12",
+          "party": "1000016",
+          "reference": "INV-E",
+          "to": "2026-10-13"
+        }
+      ],
+      "lowest": {
+        "closing": 2605000,
+        "day": "2026-10-13"
+      },
+      "lowestBefore": {
+        "closing": -1645000,
+        "day": "2026-10-12"
+      },
+      "shortfall": null
+    },
+    {
+      "account": "ACME",
+      "applied": true,
+      "asOf": "2026-10-09T09:00:03",
+      "changes": [
+        {
+          "action": "block",
+          "amount": 6145000,
+          "invoice": "5100000004/2026",
+          "message": "",
+          "outcome": "already",
+          "party": "1000016",
+          "reference": "INV-E",
+          "until": "2026-10-13"
+        }
+      ],
+      "currency": "EUR",
+      "days": [
+        {
+          "closing": 4500000,
+          "day": "2026-10-09",
+          "in": 0,
+          "opening": 4500000,
+          "out": 0
+        },
+        {
+          "closing": 4500000,
+          "day": "2026-10-12",
+          "in": 0,
+          "opening": 4500000,
+          "out": 0
+        },
+        {
+          "closing": 2605000,
+          "day": "2026-10-13",
+          "in": 4250000,
+          "opening": 4500000,
+          "out": -6145000
+        },
+        {
+          "closing": 2605000,
+          "day": "2026-10-14",
+          "in": 0,
+          "opening": 2605000,
+          "out": 0
+        }
+      ],
+      "floor": 1000000,
+      "holds": [
+        {
+          "amount": 6145000,
+          "days": 1,
+          "due": "2026-10-10",
+          "from": "2026-10-12",
+          "party": "1000016",
+          "reference": "INV-E",
+          "to": "2026-10-13"
+        }
+      ],
+      "lowest": {
+        "closing": 2605000,
+        "day": "2026-10-13"
+      },
+      "lowestBefore": {
+        "closing": -1645000,
+        "day": "2026-10-12"
+      },
+      "shortfall": null
+    },
+    {
+      "account": "ACME",
+      "applied": true,
+      "asOf": "2026-10-10T09:00:03",
+      "changes": [
+        {
+          "action": "block",
+          "amount": 6145000,
+          "invoice": "5100000004/2026",
+          "message": "",
+          "outcome": "already",
+          "party": "1000016",
+          "reference": "INV-E",
+          "until": "2026-10-13"
+        }
+      ],
+      "currency": "EUR",
+      "days": [
+        {
+          "closing": 4500000,
+          "day": "2026-10-12",
+          "in": 0,
+          "opening": 4500000,
+          "out": 0
+        },
+        {
+          "closing": 2605000,
+          "day": "2026-10-13",
+          "in": 4250000,
+          "opening": 4500000,
+          "out": -6145000
+        },
+        {
+          "closing": 2605000,
+          "day": "2026-10-14",
+          "in": 0,
+          "opening": 2605000,
+          "out": 0
+        }
+      ],
+      "floor": 1000000,
+      "holds": [
+        {
+          "amount": 6145000,
+          "days": 1,
+          "due": "2026-10-10",
+          "from": "2026-10-12",
+          "party": "1000016",
+          "reference": "INV-E",
+          "to": "2026-10-13"
+        }
+      ],
+      "lowest": {
+        "closing": 2605000,
+        "day": "2026-10-13"
+      },
+      "lowestBefore": {
+        "closing": -1645000,
+        "day": "2026-10-12"
+      },
+      "shortfall": null
+    },
+    {
+      "account": "ACME",
+      "applied": true,
+      "asOf": "2026-10-11T09:00:03",
+      "changes": [
+        {
+          "action": "block",
+          "amount": 6145000,
+          "invoice": "5100000004/2026",
+          "message": "",
+          "outcome": "already",
+          "party": "1000016",
+          "reference": "INV-E",
+          "until": "2026-10-13"
+        }
+      ],
+      "currency": "EUR",
+      "days": [
+        {
+          "closing": 4500000,
+          "day": "2026-10-12",
+          "in": 0,
+          "opening": 4500000,
+          "out": 0
+        },
+        {
+          "closing": 2605000,
+          "day": "2026-10-13",
+          "in": 4250000,
+          "opening": 4500000,
+          "out": -6145000
+        },
+        {
+          "closing": 2605000,
+          "day": "2026-10-14",
+          "in": 0,
+          "opening": 2605000,
+          "out": 0
+        }
+      ],
+      "floor": 1000000,
+      "holds": [
+        {
+          "amount": 6145000,
+          "days": 1,
+          "due": "2026-10-10",
+          "from": "2026-10-12",
+          "party": "1000016",
+          "reference": "INV-E",
+          "to": "2026-10-13"
+        }
+      ],
+      "lowest": {
+        "closing": 2605000,
+        "day": "2026-10-13"
+      },
+      "lowestBefore": {
+        "closing": -1645000,
+        "day": "2026-10-12"
+      },
+      "shortfall": null
+    },
+    {
+      "account": "ACME",
+      "applied": true,
+      "asOf": "2026-10-12T09:00:03",
+      "changes": [
+        {
+          "action": "block",
+          "amount": 6145000,
+          "invoice": "5100000004/2026",
+          "message": "",
+          "outcome": "already",
+          "party": "1000016",
+          "reference": "INV-E",
+          "until": "2026-10-13"
+        }
+      ],
+      "currency": "EUR",
+      "days": [
+        {
+          "closing": 4500000,
+          "day": "2026-10-12",
+          "in": 0,
+          "opening": 4500000,
+          "out": 0
+        },
+        {
+          "closing": 2605000,
+          "day": "2026-10-13",
+          "in": 4250000,
+          "opening": 4500000,
+          "out": -6145000
+        },
+        {
+          "closing": 2605000,
+          "day": "2026-10-14",
+          "in": 0,
+          "opening": 2605000,
+          "out": 0
+        }
+      ],
+      "floor": 1000000,
+      "holds": [
+        {
+          "amount": 6145000,
+          "days": 1,
+          "due": "2026-10-10",
+          "from": "2026-10-12",
+          "party": "1000016",
+          "reference": "INV-E",
+          "to": "2026-10-13"
+        }
+      ],
+      "lowest": {
+        "closing": 2605000,
+        "day": "2026-10-13"
+      },
+      "lowestBefore": {
+        "closing": -1645000,
+        "day": "2026-10-12"
+      },
+      "shortfall": null
+    },
+    {
+      "account": "ACME",
+      "applied": true,
+      "asOf": "2026-10-13T09:00:04",
+      "changes": [
+        {
+          "action": "release",
+          "amount": 6145000,
+          "invoice": "5100000004/2026",
+          "message": "",
+          "outcome": "done",
+          "party": "1000016",
+          "reference": "INV-E",
+          "until": null
+        }
+      ],
+      "currency": "EUR",
+      "days": [
+        {
+          "closing": 2605000,
+          "day": "2026-10-13",
+          "in": 0,
+          "opening": 8750000,
+          "out": -6145000
+        },
+        {
+          "closing": 2605000,
+          "day": "2026-10-14",
+          "in": 0,
+          "opening": 2605000,
+          "out": 0
+        }
+      ],
+      "floor": 1000000,
+      "holds": [],
+      "lowest": {
+        "closing": 2605000,
+        "day": "2026-10-13"
+      },
+      "lowestBefore": {
+        "closing": 2605000,
+        "day": "2026-10-13"
+      },
+      "shortfall": null
+    },
+    {
+      "account": "ACME",
+      "applied": true,
+      "asOf": "2026-10-14T09:00:04",
+      "changes": [],
+      "currency": "EUR",
+      "days": [
+        {
+          "closing": 2605000,
+          "day": "2026-10-14",
+          "in": 0,
+          "opening": 2605000,
+          "out": 0
+        }
+      ],
+      "floor": 1000000,
+      "holds": [],
+      "lowest": {
+        "closing": 2605000,
+        "day": "2026-10-14"
+      },
+      "lowestBefore": {
+        "closing": 2605000,
+        "day": "2026-10-14"
+      },
+      "shortfall": null
+    }
+  ],
+  "runs": [
+    {
+      "day": "2026-10-05",
+      "items": [
+        {
+          "reference": "INV-A",
+          "status": "accepted",
+          "reason": "",
+          "amount": "1200.00"
+        }
+      ],
+      "problems": []
+    },
+    {
+      "day": "2026-10-06",
+      "items": [],
+      "problems": []
+    },
+    {
+      "day": "2026-10-07",
+      "items": [
+        {
+          "reference": "INV-B",
+          "status": "accepted",
+          "reason": "",
+          "amount": "80800.00"
+        }
+      ],
+      "problems": []
+    },
+    {
+      "day": "2026-10-08",
+      "items": [],
+      "problems": []
+    },
+    {
+      "day": "2026-10-09",
+      "items": [],
+      "problems": []
+    },
+    {
+      "day": "2026-10-10",
+      "items": [],
+      "problems": []
+    },
+    {
+      "day": "2026-10-11",
+      "items": [],
+      "problems": []
+    },
+    {
+      "day": "2026-10-12",
+      "items": [],
+      "problems": []
+    },
+    {
+      "day": "2026-10-13",
+      "items": [
+        {
+          "reference": "INV-E",
+          "status": "accepted",
+          "reason": "",
+          "amount": "61450.00"
+        }
+      ],
+      "problems": []
+    },
+    {
+      "day": "2026-10-14",
+      "items": [],
+      "problems": []
+    }
+  ],
+  "source": "acme-treasury film/capture_plan.jl; clocks pinned 2026-10-05T09:00",
+  "statements": [
+    {
+      "closing": 12380000,
+      "day": "2026-10-05"
+    },
+    {
+      "closing": 12580000,
+      "day": "2026-10-06"
+    },
+    {
+      "closing": 4500000,
+      "day": "2026-10-07"
+    },
+    {
+      "closing": 4500000,
+      "day": "2026-10-08"
+    },
+    {
+      "closing": 4500000,
+      "day": "2026-10-09"
+    },
+    {
+      "closing": 4500000,
+      "day": "2026-10-12"
+    },
+    {
+      "closing": 2605000,
+      "day": "2026-10-13"
+    },
+    {
+      "closing": 2605000,
+      "day": "2026-10-14"
+    }
+  ],
+  "unplanned": {
+    "account": "ACME",
+    "asOf": "2026-10-05T09:00:00",
+    "currency": "EUR",
+    "days": [
+      {
+        "closing": 12380000,
+        "day": "2026-10-05",
+        "in": 0,
+        "opening": 12500000,
+        "out": -120000
+      },
+      {
+        "closing": 12580000,
+        "day": "2026-10-06",
+        "in": 200000,
+        "opening": 12380000,
+        "out": 0
+      },
+      {
+        "closing": 4500000,
+        "day": "2026-10-07",
+        "in": 0,
+        "opening": 12580000,
+        "out": -8080000
+      },
+      {
+        "closing": 4500000,
+        "day": "2026-10-08",
+        "in": 0,
+        "opening": 4500000,
+        "out": 0
+      },
+      {
+        "closing": 4500000,
+        "day": "2026-10-09",
+        "in": 0,
+        "opening": 4500000,
+        "out": 0
+      },
+      {
+        "closing": -1645000,
+        "day": "2026-10-12",
+        "in": 0,
+        "opening": 4500000,
+        "out": -6145000
+      },
+      {
+        "closing": 2605000,
+        "day": "2026-10-13",
+        "in": 4250000,
+        "opening": -1645000,
+        "out": 0
+      },
+      {
+        "closing": 2605000,
+        "day": "2026-10-14",
+        "in": 0,
+        "opening": 2605000,
+        "out": 0
+      }
+    ],
+    "floor": 1000000,
+    "flows": [
+      {
+        "amount": -120000,
+        "day": "2026-10-05",
+        "note": "",
+        "party": "1000013",
+        "reference": "INV-A",
+        "source": "payable"
+      },
+      {
+        "amount": 200000,
+        "day": "2026-10-06",
+        "note": " PAYMENT",
+        "party": "Customer Ltd",
+        "reference": "",
+        "source": "credit"
+      },
+      {
+        "amount": -8080000,
+        "day": "2026-10-07",
+        "note": "",
+        "party": "1000016",
+        "reference": "INV-B",
+        "source": "payable"
+      },
+      {
+        "amount": -6145000,
+        "day": "2026-10-12",
+        "note": "",
+        "party": "1000016",
+        "reference": "INV-E",
+        "source": "payable"
+      },
+      {
+        "amount": 4250000,
+        "day": "2026-10-13",
+        "note": "",
+        "party": "1000006",
+        "reference": "0100000011",
+        "source": "receivable"
+      }
+    ],
+    "leftOut": [
+      {
+        "amount": -5000,
+        "note": "payment block A",
+        "party": "1000013",
+        "reason": "blocked",
+        "reference": "INV-C"
+      },
+      {
+        "amount": 2949620,
+        "note": "due 2025-10-12",
+        "party": "1000006",
+        "reason": "overdue",
+        "reference": "0100000001"
+      },
+      {
+        "amount": 21112492,
+        "note": "due 2026-01-29",
+        "party": "1000003",
+        "reason": "overdue",
+        "reference": "0100000002"
+      },
+      {
+        "amount": 11030392,
+        "note": "due 2026-02-01",
+        "party": "1000019",
+        "reason": "overdue",
+        "reference": "0100000003"
+      },
+      {
+        "amount": 10279565,
+        "note": "due 2025-11-27",
+        "party": "1000022",
+        "reason": "overdue",
+        "reference": "0100000004"
+      },
+      {
+        "amount": 22262112,
+        "note": "due 2026-01-15",
+        "party": "1000002",
+        "reason": "overdue",
+        "reference": "0100000005"
+      },
+      {
+        "amount": 853325,
+        "note": "due 2026-02-10",
+        "party": "1000006",
+        "reason": "overdue",
+        "reference": "0100000006"
+      }
+    ],
+    "lowest": {
+      "closing": -1645000,
+      "day": "2026-10-12"
+    },
+    "pastCutoff": false,
+    "position": 12500000,
+    "underFloorFrom": "2026-10-12"
+  },
+  "versions": {
+    "mock-acme": "0.1.0",
+    "mock-bank": "0.7.0",
+    "mock-sap": "0.17.1"
+  }
+}

@@ -9,26 +9,7 @@
 # forecast said is a green block on the line. One that does not is red, with
 # the distance drawn, and the next morning's forecast replaces the line.
 
-using CairoMakie
-using Dates
-using JSON
-
-const BACKGROUND, INK, MUTED = "#030806", "#52F58A", "#2FAE5C"
-const RAIL, RAIL_TEXT, PROBLEM = "#1A6638", "#23854A", "#FF3B30"
-const FACE = "VT323"
-const FPS = 20
-const KEYS = 2              # characters typed in a frame
-const BEAT, WAIT, FINAL = 0.85, 1.5, 4.5
-
-Makie.FreeTypeAbstraction.findfont(FACE) === nothing &&
-    error("the font $FACE is not installed, and the look is set in it: brew install --cask font-vt323")
-
-function money(minor::Integer)
-    whole, fraction = divrem(abs(minor), 100)
-    string(minor < 0 ? "-" : "", replace(string(whole), r"(?<=\d)(?=(\d{3})+$)" => ","),
-           ".", lpad(fraction, 2, '0'))
-end
-stamp(day::Date) = uppercase(Dates.format(day, dateformat"e dd u"))
+include(joinpath(@__DIR__, "look.jl"))
 
 # -- the capture ---------------------------------------------------------------
 
@@ -49,20 +30,6 @@ function steps(f)
         push!(points, Point2f(X[day] - 0.5, f.closing[day] / 100), Point2f(X[day] + 0.5, f.closing[day] / 100))
     end
     points
-end
-
-"As much of a line as lies left of `x`."
-function upto(points, x)
-    shown = Point2f[]
-    for (a, b) in zip(points, Iterators.drop(points, 1))
-        isempty(shown) && a[1] <= x && push!(shown, a)
-        if b[1] <= x
-            push!(shown, b)
-        elseif a[1] < x
-            push!(shown, Point2f(x, a[2]))      # part way along a flat stretch
-        end
-    end
-    shown
 end
 
 # -- the story, one frame at a time ---------------------------------------------
@@ -194,14 +161,7 @@ Label(fig[3, 1], tell(s -> s.status * "_"); color = tell(s -> s.alarm ? PROBLEM 
       fontsize = 26, halign = :left, tellwidth = false)
 rowgap!(fig.layout, 6)
 
-# Scanlines, over everything: two dark pixels in every five.
-linesegments!(fig.scene, [Point2f(x, y) for y in 0:5:450 for x in (0, 800)];
-              color = ("#000000", 0.16), linewidth = 2)
-
-for name in ("week.mp4", "week.gif")
-    path = joinpath(@__DIR__, "..", "docs", name)
-    record(fig, path, FILM; framerate = FPS, px_per_unit = 1) do frame
-        shown[] = frame
-    end
-    println(path, "  ", length(FILM), " frames, ", round(length(FILM) / FPS; digits = 1), "s")
+scanlines!(fig)
+film(fig, FILM, "week") do frame
+    shown[] = frame
 end
