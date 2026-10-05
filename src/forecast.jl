@@ -70,13 +70,20 @@ end
 
 squeeze(text) = replace(text, r"\s+" => "")
 
-"The newest payment at the bank under each reference: it decides what its item is."
-function newest(snap::Snapshot)
-    latest = Dict{String,BankPayment}()
-    for p in snap.payments
-        haskey(latest, p.reference) || (latest[p.reference] = p)
+"""
+The newest payment at the bank that is this item's: it decides what the item
+is. The bank knows a payment by its `EndToEndId`, which is the supplier's
+invoice number, and two suppliers may use the same number, or one use it
+twice. So the reference alone is not enough: the payment is also for this
+amount in this currency, and was not at the bank before the item was posted.
+"""
+function paymentfor(snap::Snapshot, item::OpenItem)
+    item.reference == "" && return nothing
+    index = findfirst(snap.payments) do p
+        p.reference == item.reference && p.amount == item.amount && p.currency == item.currency &&
+            (p.received === nothing || item.posted === nothing || p.received >= item.posted)
     end
-    latest
+    index === nothing ? nothing : snap.payments[index]
 end
 
 "The bank has it and has not sent it back: in the balance already, or on its way out."
@@ -92,7 +99,8 @@ What it holds to, each of which is a way a cash forecast is quietly wrong:
 
 - **A payment at the bank is not owed twice.** SAP keeps an item open until a
   statement clears it, so an accepted payment and its open item are one
-  outflow, joined on the `EndToEndId`.
+  outflow, joined on the `EndToEndId`, the amount, and the payment not being
+  older than the item: an invoice number used again is another invoice.
 - **A blocked item is not money going out,** and an overdue receivable is not
   money coming in: it was due once already. Both are listed, not forecast.
 - **The schedule's own block is not anyone else's.** An item it is holding is
@@ -129,7 +137,6 @@ function project(snap::Snapshot, scenario::Scenario, planned::Dict{String,Date},
     flows, asides = Flow[], Aside[]
     ours(currency) = currency == snap.currency
 
-    latest = newest(snap)
 
     for p in snap.payments
         (p.status == "accepted" && ours(p.currency)) || continue
@@ -157,7 +164,7 @@ function project(snap::Snapshot, scenario::Scenario, planned::Dict{String,Date},
         if !ours(item.currency)
             aside(:currency, "in $(item.currency), and the account is in $(snap.currency)")
         elseif item.kind == :payable
-            payment = get(latest, item.reference, nothing)
+            payment = paymentfor(snap, item)
             if item.reference == ""
                 aside(:noinvoice, "no supplier invoice behind it, so no payment run selects it")
             elseif item.block != "" && !held(item, scenario) && !scenario.releaseblocked

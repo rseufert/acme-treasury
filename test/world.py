@@ -15,12 +15,26 @@ to agree with it. Each command prints JSON.
 """
 import datetime
 import json
+import os
 import sys
 
 from mockacme.bank_messages import call
-from mockacme.payment_run import ODATA, PaymentRun, Run, SapSession
+from mockacme.payment_run import ODATA, PaymentRun, Register, Run, SapSession
 
 ACME = {"name": "ACME Corporation", "iban": "NL41MOCK0000000001", "bic": "MOCKNL2A"}
+
+
+def payments(sap, bank):
+    """The payment program, with its register of what it has sent.
+
+    Each command here is a process of its own, so the register has to be a
+    file: mock-acme's in-memory one forgets between a run and the next day's,
+    and a run that has forgotten pays an invoice again before the statement
+    clears it. WORLD_REGISTER names the file; the harness gives each pair of
+    mocks its own.
+    """
+    path = os.environ.get("WORLD_REGISTER")
+    return PaymentRun(sap, bank, ACME, register=Register(path) if path else None)
 
 
 def control(base, method, path):
@@ -75,7 +89,7 @@ def statements(sap, bank):
     """Post the statements the bank has issued since the last time."""
     day, _ = today(bank)
     before = Run(day, "pre")
-    PaymentRun(sap, bank, ACME).reconcile(before)
+    payments(sap, bank).reconcile(before)
     return {"day": day.isoformat(), "items": [], "problems": list(before.problems)}
 
 
@@ -84,7 +98,7 @@ def run(sap, bank):
     day, settles = today(bank)
     items, problems = [], []
     if settles:
-        done = PaymentRun(sap, bank, ACME).run(day, "R1")
+        done = payments(sap, bank).run(day, "R1")
         problems = list(done.problems)
         items = [{"reference": i.reference, "status": i.status, "reason": i.reason,
                   "amount": i.amount} for i in done.items]

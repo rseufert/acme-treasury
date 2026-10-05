@@ -35,8 +35,12 @@ function answers(url)
     false
 end
 
-"Both mocks, started at `start` on their clocks, for as long as `body` runs."
-function withmocks(body; start = START)
+"""
+Both mocks, started at `start` on their clocks, for as long as `body` runs.
+`register = false` is a payment program that keeps no record of what it has
+sent from one morning to the next.
+"""
+function withmocks(body; start = START, register = true)
     sapport, bankport = freeports(2)
     quiet = (stdout = devnull, stderr = devnull)
     mocks = [run(pipeline(`$PYTHON -m mocksap --port $sapport --clock $start -q`; quiet...); wait = false),
@@ -44,7 +48,12 @@ function withmocks(body; start = START)
     sap, bank = "http://127.0.0.1:$sapport", "http://127.0.0.1:$bankport"
     try
         answers(sap) && answers(bank) || error("the mocks did not start")
-        body(sap, bank)
+        # The payment run's register of what it has sent: a file, because each
+        # morning's run is a process of its own, and new for each pair of mocks.
+        mktempdir() do dir
+            withenv(() -> body(sap, bank),
+                    "WORLD_REGISTER" => (register ? joinpath(dir, "register.json") : nothing))
+        end
     finally
         foreach(kill, mocks)
     end

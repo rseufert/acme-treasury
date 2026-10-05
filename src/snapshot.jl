@@ -15,6 +15,7 @@ Base.@kwdef struct OpenItem
     reference::String = ""      # the supplier's invoice number, a payment's EndToEndId
     reopened::Bool = false      # ClearingIsReversed: paid once, and it came back
     invoice::String = ""        # SupplierInvoice/FiscalYear, where a payment block is set
+    posted::Union{Date,Nothing} = nothing   # PostingDate: no payment for it is older than this
 end
 
 "A payment the bank has decided on, from the paying account."
@@ -28,6 +29,7 @@ Base.@kwdef struct BankPayment
     booked::Bool = false
     returndue::Union{Date,Nothing} = nothing
     returned::Bool = false
+    received::Union{Date,Nothing} = nothing     # the day the bank took the file in
 end
 
 "Money on its way in that the bank already knows about."
