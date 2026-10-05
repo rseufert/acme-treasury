@@ -32,8 +32,10 @@ the bank issues for it.
 Written in Julia. Unlike the mocks it takes dependencies:
 [HTTP.jl](https://github.com/JuliaWeb/HTTP.jl),
 [JSON.jl](https://github.com/JuliaIO/JSON.jl),
-[EzXML.jl](https://github.com/JuliaIO/EzXML.jl) and
-[UnicodePlots.jl](https://github.com/JuliaPlots/UnicodePlots.jl).
+[EzXML.jl](https://github.com/JuliaIO/EzXML.jl),
+[UnicodePlots.jl](https://github.com/JuliaPlots/UnicodePlots.jl), and
+[JuMP](https://jump.dev) with [HiGHS](https://highs.dev) for the payment
+schedule.
 
 MIT licensed. By [Rick Seufert](https://rickseufert.com).
 
@@ -156,6 +158,41 @@ It assumes a payment run every business morning, which pays each supplier item
 on its due date. That is what `payment_run` in
 [mock-acme](https://github.com/rseufert/mock-acme) does.
 
+### The payment schedule
+
+`--floor` says the account will go under. `planpayments` says what to do about
+it: which invoices to hold, and until which business day, so that no day
+closes under the floor. It is a small mixed-integer program, written in
+[JuMP](https://jump.dev) and solved by [HiGHS](https://highs.dev), and like the
+forecast it is a pure function of a snapshot. It has no command yet; from
+`julia --project=.`:
+
+```julia
+using AcmeTreasury
+plan = planpayments(snapshot(sap, bank, "ACME"), Scenario(days = 8, floor = 10_000_00))
+plan.holds                  # INV-E: a run would pay it Mon 12 Oct, the plan pays it Tue 13
+lowest(plan.forecast)       # 26,050.00 on Tue 13 Oct, where it was -16,450.00 on Mon 12
+```
+
+- **Nothing is held when nothing is wrong.** A forecast that keeps the floor
+  gives an empty plan, and the solver is not called.
+- **It only moves what a run would pay, and only later,** to a business day
+  inside the horizon. Blocked and refused items, other currencies and payments
+  already at the bank are not its to move.
+- **The least lateness.** Of the plans that keep the floor, the one with the
+  smallest sum of amount times business days held, so a large invoice is not
+  held where a small one would do, and nothing is held longer than it must be.
+- **A floor no plan can keep is not an error.** Holding everything to the last
+  day gives every earlier day the best closing any plan can, so a day still
+  under the floor then is held to that closing instead, and `shortfall(plan)`
+  names the worst of them. The answer on that day is money, not timing.
+- **The same snapshot gives the same plan.** Among plans of equal lateness the
+  invoice due latest is held longest, then the next; invoices due the same day
+  go by reference.
+- **The solver chooses the days and nothing else.** The plan's forecast is
+  made again by the forecast's own arithmetic, in whole minor units, and
+  checked against the floor before it is returned.
+
 ## What it cannot know
 
 A forecast taken on Monday morning expects to pay an invoice whose supplier
@@ -225,6 +262,7 @@ the line.
 | File | What is in it |
 | --- | --- |
 | `src/forecast.jl` | The forecast: a pure function of a snapshot and a scenario |
+| `src/schedule.jl` | The payment schedule: what to hold so the forecast keeps the floor |
 | `src/snapshot.jl` | What a snapshot is: open items, payments, credits, the balance, the day |
 | `src/wire.jl` | Reading both mocks over HTTP |
 | `src/calendar.jl`, `src/money.jl` | Business days, and amounts as whole minor units |
@@ -239,6 +277,7 @@ the line.
 | Probabilities | Nothing in two deterministic mocks to fit them to. Scenarios are stated assumptions |
 | FX and more than one account | One account, one currency, as mock-bank's accounts are |
 | Direct debits and NACHA | The payment run this follows pays by `pain.001` credit transfer |
+| Early-payment discounts, late-payment penalties, supplier priority | The schedule costs lateness by amount and days alone; it reads no terms that price a late day and no mark on a supplier who should not be kept waiting |
 | Clearing customer items in SAP | Nothing in the chain does it yet, so a paid receivable stays open there and is recognised by the credit that names it |
 
 ## See also

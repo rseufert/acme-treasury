@@ -80,8 +80,18 @@ What it holds to, each of which is a way a cash forecast is quietly wrong:
 - **A credit the bank already holds replaces the receivable it names,** when
   it names one; a payer who quotes nothing is counted beside it.
 """
-function forecast(snap::Snapshot, scenario::Scenario = Scenario())::Forecast
+forecast(snap::Snapshot, scenario::Scenario = Scenario())::Forecast =
+    first(project(snap, scenario, Dict{String,Date}()))
+
+"""
+The forecast with some payables paid on a planned day instead of the day a run
+would pay them: `planned` is keyed by `OpenItem.document`. Also returns the
+payables a run would pay, each with the day it would - the ones a schedule may
+move.
+"""
+function project(snap::Snapshot, scenario::Scenario, planned::Dict{String,Date})
     cal = snap.calendar
+    payables = Tuple{OpenItem,Date}[]
     flows, asides = Flow[], Aside[]
     ours(currency) = currency == snap.currency
 
@@ -129,7 +139,11 @@ function forecast(snap::Snapshot, scenario::Scenario = Scenario())::Forecast
             elseif item.due === nothing
                 aside(:nodue, "no due date")
             else
-                push!(flows, Flow(runday(snap, item.due), amount, :payable, item.reference, item.party,
+                day = runday(snap, item.due)
+                push!(payables, (item, day))
+                held = get(planned, item.document, day)
+                push!(flows, Flow(held, amount, :payable, item.reference, item.party,
+                                  held != day ? "held from $day" :
                                   item.reopened ? "returned once, owed again" :
                                   item.block != "" ? "block $(item.block) released" : ""))
             end
@@ -165,7 +179,7 @@ function forecast(snap::Snapshot, scenario::Scenario = Scenario())::Forecast
         balance += inflow + outflow
     end
     Forecast(snap.account, snap.currency, snap.now, snap.pastcutoff, snap.position,
-             scenario, lines, flows, asides)
+             scenario, lines, flows, asides), payables
 end
 
 shown(item::OpenItem) = item.kind == :payable && item.reference != "" ? item.reference : item.number
