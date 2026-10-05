@@ -1,0 +1,11 @@
+# The Actions the workflow runs are kept current here, which is what makes
+# pinning `julia-actions/setup-julia` to a commit SHA safe to keep doing: a pin
+# nothing updates is a pin somebody eventually loosens (docs/GITHUB.md).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    labels:
+      - no changelog

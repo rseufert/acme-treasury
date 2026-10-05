@@ -4,20 +4,65 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
+    name: tests
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
-          python-version: "3.12"
+          python-version: "3.13"
       # The forecast is checked against the mocks as published, and against
       # mock-acme's payment run, which is not on PyPI.
-      - run: pip install mock-sap mock-bank git+https://github.com/rseufert/mock-acme
-      - uses: julia-actions/setup-julia@v2
+      - name: Install the mocks and mock-acme
+        run: python -m pip install mock-sap mock-bank git+https://github.com/rseufert/mock-acme
+      - name: Say which mocks these are
+        run: python -m pip list
+      # The one action here that GitHub does not own, so it is pinned to a
+      # commit and named in the repository's allowed actions (docs/GITHUB.md).
+      - uses: julia-actions/setup-julia@fa02766e078afaaf09b14210362cee14137e6a32 # v3.0.2
         with:
           version: "1.13"
-      - uses: julia-actions/cache@v2
-      - run: julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test()'
+      - name: Run the tests
+        run: julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test()'
+
+  # The one check `main` requires (docs/GITHUB.md). Its name is load-bearing:
+  # the branch ruleset asks for "CI passed" by name, so add jobs to `needs`
+  # and leave the name alone.
+  #
+  # `if: always()` is the point. Without it this job is *skipped* when a job it
+  # needs fails, and a required check that was skipped counts as passed.
+  all:
+    name: CI passed
+    if: always()
+    needs: [test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every job this workflow runs succeeded
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          set -eu
+          echo "$RESULTS"
+          python3 - <<'PY'
+          import json, os, sys
+          needs = json.loads(os.environ["RESULTS"])
+          bad = {name: job["result"] for name, job in needs.items()
+                 if job["result"] != "success"}
+          if bad:
+              sys.exit("not passed: %s" % ", ".join(
+                  "%s %s" % pair for pair in sorted(bad.items())))
+          print("all %d jobs succeeded" % len(needs))
+          PY
