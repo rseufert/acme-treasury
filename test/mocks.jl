@@ -1,10 +1,10 @@
 # The forecast held to what the bank then says happened.
 #
 # Both mocks are started here on a pinned clock, a week is played forward one
-# morning at a time with mock-bank's own payment run, and every closing balance
+# morning at a time with mock-acme's payment run, and every closing balance
 # forecast is compared with the camt.053 the bank issues for that day.
 #
-# It needs a Python that has mock-sap and mock-bank installed: MOCK_PYTHON, or
+# It needs a Python that has mock-sap, mock-bank and mock-acme installed: MOCK_PYTHON, or
 # python3. Without one these tests are skipped, and say so.
 
 using HTTP
@@ -17,7 +17,7 @@ const START = "2026-10-05T09:00"                    # a Monday morning, before t
 const GLOBEX, INITECH, UMBRELLA = "1000013", "1000014", "1000016"   # suppliers, as mock-sap seeds them
 const CUSTOMER = "1000006"
 
-havemocks() = success(pipeline(`$PYTHON -c "import mocksap, mockbank.examples"`;
+havemocks() = success(pipeline(`$PYTHON -c "import mocksap, mockbank, mockacme.payment_run"`;
                                stdout = devnull, stderr = devnull))
 
 "Ports nothing listens on: bound together, so they differ, then let go."
@@ -74,8 +74,8 @@ function compared(f, actual)
 end
 
 if !havemocks()
-    @warn "mock-sap and mock-bank are not installed for $PYTHON, so the forecast was not checked " *
-          "against them. pip install mock-sap mock-bank, or set MOCK_PYTHON."
+    @warn "mock-sap, mock-bank and mock-acme are not installed for $PYTHON, so the forecast was " *
+          "not checked against them. See the README's Tests section, or set MOCK_PYTHON."
 else
     @testset "against the mocks" begin
         @testset "a week, forecast on Monday and every morning after" begin
@@ -104,7 +104,9 @@ else
                     today == Date(2026, 10, 8) && bankpost(bank, "/_mock/credits",
                         Dict("account" => "ACME", "amount" => 250_000, "note" => "your invoice $owed",
                              "debtor" => Dict("name" => "Customer Ltd", "iban" => "NL14MOCK0000000002")))
-                    @test world(sap, bank, "morning")["problems"] == []
+                    # The run reports a customer's credit as money it does not clear,
+                    # which is right, and it is the only thing it has to say.
+                    @test all(contains("money arriving"), world(sap, bank, "morning")["problems"])
                     night(sap, bank)
                 end
 

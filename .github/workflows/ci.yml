@@ -13,8 +13,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      # The forecast is checked against the mocks as published.
-      - run: pip install mock-sap mock-bank
+      # The forecast is checked against the mocks as published, and against
+      # mock-acme's payment run, which is not on PyPI.
+      - run: pip install mock-sap mock-bank git+https://github.com/rseufert/mock-acme
       - uses: julia-actions/setup-julia@v2
         with:
           version: "1.13"

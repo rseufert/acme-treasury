@@ -2,7 +2,7 @@
 """The world the forecast is checked against: suppliers that bill, customers
 that owe, and a payment run every morning.
 
-The run is mock-bank's own `payment_run` example, unchanged, so what the
+The run is mock-acme's `payment_run`, unchanged, so what the
 forecast is held to is the chain the mocks already document, not one written
 to agree with it. Each command prints JSON.
 
@@ -15,8 +15,8 @@ import datetime
 import json
 import sys
 
-from mockbank.examples.bank_messages import call
-from mockbank.examples.payment_run import ODATA, PaymentRun, Run, SapSession
+from mockacme.bank_messages import call
+from mockacme.payment_run import ODATA, PaymentRun, Run, SapSession
 
 ACME = {"name": "ACME Corporation", "iban": "NL41MOCK0000000001", "bic": "MOCKNL2A"}
 

@@ -37,10 +37,11 @@ MIT licensed. By [Rick Seufert](https://rickseufert.com).
 
 ## Quick start
 
-It needs Julia 1.13 and, to have something to forecast, the two mocks:
+It needs Julia 1.13 and, to have something to forecast, the two mocks and
+[mock-acme](https://github.com/rseufert/mock-acme), whose payment run the demo's setup and the tests use:
 
 ```bash
-pip install mock-sap mock-bank
+pip install mock-sap mock-bank git+https://github.com/rseufert/mock-acme
 julia --project=. -e 'using Pkg; Pkg.instantiate()'
 bin/demo
 ```
@@ -148,7 +149,8 @@ Each of these is a way a cash forecast is quietly wrong.
   this; an item in a currency the account is not in is listed.
 
 It assumes a payment run every business morning, which pays each supplier item
-on its due date. That is what `payment_run` in mock-bank's examples does.
+on its due date. That is what `payment_run` in
+[mock-acme](https://github.com/rseufert/mock-acme) does.
 
 ## What it cannot know
 
@@ -173,9 +175,9 @@ julia --project=. -e 'using Pkg; Pkg.test()'
 forecast is a pure function of one, so these need nothing running.
 
 `test/mocks.jl` starts both mocks on a pinned clock and plays time forward.
-The run each morning is mock-bank's own `payment_run` example, unchanged, so
-the forecast is held to the chain the mocks already document and not to one
-written to agree with it.
+The run each morning is mock-acme's `payment_run`, unchanged, so the forecast
+is held to the reference integration and not to a chain written to agree with
+it.
 
 | Test | What it proves |
 | --- | --- |
@@ -184,7 +186,8 @@ written to agree with it.
 | What Monday cannot know | The closed account above: Monday is out by the invoice, Tuesday is not |
 | A side that is down is named | SAP or the bank not answering is said in words, with exit status 2 |
 
-They need a Python with both mocks installed: `MOCK_PYTHON`, or `python3`.
+They need a Python with both mocks and mock-acme installed, as in the quick
+start: `MOCK_PYTHON`, or `python3`.
 Without one they are skipped with a warning and the unit tests still run.
 
 ## Layout
@@ -211,6 +214,7 @@ Without one they are skipped with a warning and the unit tests still run.
 
 [mock-sap](https://github.com/rseufert/mock-sap),
 [mock-edi](https://github.com/rseufert/mock-edi) and
-[mock-bank](https://github.com/rseufert/mock-bank), and
-[rickseufert.com](https://rickseufert.com/#projects) for the worked examples
+[mock-bank](https://github.com/rseufert/mock-bank),
+[mock-acme](https://github.com/rseufert/mock-acme), the integration between
+them, and [rickseufert.com](https://rickseufert.com/#projects) for the worked examples
 that use them together.

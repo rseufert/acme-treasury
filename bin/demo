@@ -1,6 +1,6 @@
 #!/bin/sh
 # Start both mocks on a Monday morning, give them a week's worth to do, and
-# forecast it. Needs mock-sap and mock-bank: pip install mock-sap mock-bank
+# forecast it. Needs the mocks and mock-acme: see the README's quick start.
 set -e
 here="$(cd "$(dirname "$0")/.." && pwd)"
 python="${MOCK_PYTHON:-python3}"
