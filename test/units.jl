@@ -418,3 +418,22 @@ end
           closing(forecast(week(; items = [inv("INV-1")], payments), Scenario(days = 2))) == [44_000_00, 44_000_00]
     @test reasons(forecast(week(; items, payments), Scenario(days = 2))) == []
 end
+
+@testset "a payment is an invoice's by more than its number" begin
+    sent(; kw...) = BankPayment(; reference = "INV-100", amount = 1_000_00, currency = "EUR",
+                                status = "accepted", settles = MON12, booked = true, kw...)
+    inv(; amount = 1_000_00, kw...) = payable("INV-100", amount, MON12; invoice = "INV-100/2026", kw...)
+    f(item, payment) = forecast(week(items = [item], payments = [payment]), Scenario(days = 1))
+    guarded(item, payment) = let world = week(items = [item], payments = [payment])
+        [(c.action, c.outcome) for c in changes(world, planpayments(world, Scenario(days = 1)); guard = true)]
+    end
+    # The same number, amount and a payment not older than the invoice: one outflow, already made.
+    @test closing(f(inv(posted = Date(2026, 10, 1)), sent(received = Date(2026, 10, 9)))) == [45_000_00]
+    @test guarded(inv(posted = Date(2026, 10, 1)), sent(received = Date(2026, 10, 9))) == [(:guard, :wanted)]
+    # Another supplier's invoice with the same number, or the number used again: still owed,
+    # and not the guard's to block. An old payment is for an old invoice.
+    @test closing(f(inv(amount = 2_500_00), sent())) == [42_500_00]
+    @test guarded(inv(amount = 2_500_00), sent()) == []
+    @test closing(f(inv(posted = Date(2026, 10, 10)), sent(received = Date(2026, 9, 1)))) == [44_000_00]
+    @test guarded(inv(posted = Date(2026, 10, 10)), sent(received = Date(2026, 9, 1))) == []
+end

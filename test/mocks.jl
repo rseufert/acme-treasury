@@ -396,20 +396,11 @@ else
             end
         end
         # Every day here is played at 16:00, an hour after the bank's cutoff, so
-        # what a run sends settles on the next business day.
-        #
-        # It also means the next day's run starts before the statement that
-        # would clear the item, and mock-acme's run then pays the invoice again:
-        # rseufert/mock-acme#2, the first of its three, which waits on
-        # rseufert/mock-sap#90. That is not this repository's to fix, so these
-        # tests hold what is: the plan, the first payment, and the statements
-        # up to the day a second payment lands. The second payment is marked
-        # broken, and will say so here the day it stops happening.
-        #
-        # `plan --apply --guard` is this repository's second pair of eyes for
-        # it, and the tests after these two hold that with it the invoice is
-        # paid once.
-        late_in_the_day(body) = withmocks(; start = "2026-10-05T16:00") do sap, bank
+        # what a run sends settles on the next business day, and the next day's
+        # run starts before the statement that would clear the item. SAP still
+        # shows it open. What keeps the run from paying it again is mock-acme's
+        # register of what it has sent, which test/world.py keeps in a file.
+        late_in_the_day(body; kw...) = withmocks(; start = "2026-10-05T16:00", kw...) do sap, bank
             world(sap, bank, "reset")
             world(sap, bank, "payable", GLOBEX, "INV-X", "120000.00", "2026-10-05")
             bankpost(bank, "/_mock/credits", Dict("account" => "ACME", "amount" => 2_000_000,
@@ -419,33 +410,46 @@ else
 
         @testset "after the cutoff, without the schedule: paid today, short tomorrow" begin
             late_in_the_day() do sap, bank
-                week = played(sap, bank; last = Date(2026, 10, 6))
+                week = played(sap, bank; last = Date(2026, 10, 9))
                 @test week.forecasts[1].pastcutoff
                 @test week.paid == Dict("INV-X" => Date(2026, 10, 5))
-                @test [week.actual[Date(2026, 10, d)] for d in 5:6] == [125_000_00, 5_000_00]
+                @test isempty(week.twice)
+                @test [week.actual[Date(2026, 10, d)] for d in 5:9] ==
+                      [125_000_00, 5_000_00, 5_000_00, 25_000_00, 25_000_00]
                 @test agrees(week)
-                @test_broken isempty(week.twice)        # Tuesday's run pays it again
             end
         end
 
         @testset "after the cutoff, with the schedule: the block is lifted the evening before" begin
             late_in_the_day() do sap, bank
-                week = played(sap, bank; last = Date(2026, 10, 8), floor = 10_000_00)
+                week = played(sap, bank; last = Date(2026, 10, 9), floor = 10_000_00)
                 # The plan is in days the money moves: held from Tuesday, when
                 # Monday's run would have settled, to Thursday, when the credit books.
                 @test [(h.reference, h.from, h.to, h.days) for h in week.plans[1].holds] ==
                       [("INV-X", Date(2026, 10, 6), Date(2026, 10, 8), 2)]
                 # So the run that pays it is Wednesday's, after that day's cutoff.
                 @test week.paid == Dict("INV-X" => Date(2026, 10, 7))
+                @test isempty(week.twice)
                 @test isempty(holding(week.plans[3]))
-                @test [week.actual[Date(2026, 10, d)] for d in 5:8] ==
-                      [125_000_00, 125_000_00, 125_000_00, 25_000_00]
+                @test [week.actual[Date(2026, 10, d)] for d in 5:9] ==
+                      [125_000_00, 125_000_00, 125_000_00, 25_000_00, 25_000_00]
                 @test agrees(week)
-                @test_broken isempty(week.twice)        # Thursday's run pays it again
             end
         end
-        @testset "after the cutoff, with the guard: paid once" begin
-            late_in_the_day() do sap, bank
+
+        # A payment program that keeps no register has nothing to stop it, and
+        # that is what `plan --apply --guard` is for: these three are played
+        # with `register = false`.
+        @testset "a run with no register pays twice after the cutoff" begin
+            late_in_the_day(register = false) do sap, bank
+                week = played(sap, bank; last = Date(2026, 10, 7))
+                @test week.twice == ["INV-X"]
+                @test week.actual[Date(2026, 10, 7)] == -115_000_00
+            end
+        end
+
+        @testset "with no register and the guard: paid once" begin
+            late_in_the_day(register = false) do sap, bank
                 week = played(sap, bank; last = Date(2026, 10, 9), guard = true)
                 @test week.paid == Dict("INV-X" => Date(2026, 10, 5))
                 @test isempty(week.twice)
@@ -457,19 +461,8 @@ else
             end
         end
 
-        @testset "after the cutoff, with the schedule and the guard: held, then paid once" begin
-            late_in_the_day() do sap, bank
-                week = played(sap, bank; last = Date(2026, 10, 9), floor = 10_000_00, guard = true)
-                @test week.paid == Dict("INV-X" => Date(2026, 10, 7))
-                @test isempty(week.twice)
-                @test [week.actual[Date(2026, 10, d)] for d in 5:9] ==
-                      [125_000_00, 125_000_00, 125_000_00, 25_000_00, 25_000_00]
-                @test agrees(week)
-            end
-        end
-
-        @testset "under the guard, a payment that comes back is paid again, once" begin
-            withmocks(; start = "2026-10-05T16:00") do sap, bank
+        @testset "with no register and the guard, a payment that comes back is paid again, once" begin
+            withmocks(; start = "2026-10-05T16:00", register = false) do sap, bank
                 world(sap, bank, "reset")
                 world(sap, bank, "payable", GLOBEX, "INV-X", "120000.00", "2026-10-05")
                 bankpatch(bank, "/_mock/accounts/ACME",

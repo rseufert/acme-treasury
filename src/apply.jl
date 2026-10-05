@@ -41,7 +41,6 @@ item has been sent.
 function changes(snap::Snapshot, plan::Plan; guard::Bool = false)::Vector{Change}
     code = plan.forecast.scenario.holdcode
     holds = Dict(h.document => h for h in plan.holds)
-    latest = newest(snap)
     found = Change[]
     for item in snap.items
         (item.kind == :payable && item.invoice != "") || continue
@@ -50,7 +49,7 @@ function changes(snap::Snapshot, plan::Plan; guard::Bool = false)::Vector{Change
             action, item.invoice, item.reference, item.party, item.amount, until, outcome, ""))
         if hold !== nothing
             change(:block, hold.to, item.block == code ? :already : :wanted)
-        elseif guard && atbank(get(latest, item.reference, nothing))
+        elseif guard && atbank(paymentfor(snap, item))
             # Somebody else's block keeps a run off it as well as ours would.
             item.block in ("", code) && change(:guard, nothing, item.block == code ? :already : :wanted)
         elseif item.block == code

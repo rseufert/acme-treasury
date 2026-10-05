@@ -72,6 +72,7 @@ function openitems(sap::String)::Vector{OpenItem}
                 amount = abs(cents(row["AmountInTransactionCurrency"])),
                 currency = row["TransactionCurrency"],
                 due = sapdate(row["NetDueDate"]),
+                posted = sapdate(row["PostingDate"]),
                 block = something(row["PaymentBlockingReason"], ""),
                 reference = invoice(row, "SupplierInvoiceIDByInvcgParty"),
                 reopened = row["ClearingIsReversed"] === true,
@@ -186,7 +187,8 @@ function payments(bank::String, account::String)::Vector{BankPayment}
         settles = bankdate(row["settlement_date"]),
         booked = row["booked_at"] !== nothing,
         returndue = bankdate(row["return_due"]),
-        returned = row["returned_at"] !== nothing)
+        returned = row["returned_at"] !== nothing,
+        received = bankdate(get(row, "received_at", nothing)))
      for row in rows if row["account_id"] == account]
 end
 
