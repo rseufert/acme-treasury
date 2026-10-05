@@ -44,7 +44,11 @@ function withmocks(body; start = START)
     sap, bank = "http://127.0.0.1:$sapport", "http://127.0.0.1:$bankport"
     try
         answers(sap) && answers(bank) || error("the mocks did not start")
-        body(sap, bank)
+        # The payment run's register of what it has sent: a file, because each
+        # morning's run is a process of its own, and new for each pair of mocks.
+        mktempdir() do dir
+            withenv(() -> body(sap, bank), "WORLD_REGISTER" => joinpath(dir, "register.json"))
+        end
     finally
         foreach(kill, mocks)
     end
