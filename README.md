@@ -104,10 +104,14 @@ bin/acme-treasury --sap http://127.0.0.1:8000 --bank http://127.0.0.1:8080
 | `--release-blocked` | off | Assume every payment block is lifted |
 | `--floor` | `0.00` | Flag a closing balance under this |
 | `--plot` | off | Draw the closing balances in the terminal |
-| `--json` | off | The forecast as JSON, amounts in minor units |
+| `--json` | off | The forecast, or the plan, as JSON, amounts in minor units |
+| `plan` | | As the first argument: the payment schedule instead of the forecast |
+| `--apply` | off | With `plan`: set and lift payment blocks in SAP to match. **This writes to SAP**; without it nothing is written |
+| `--hold-code` | `T` | The payment block that is the schedule's own |
 
-The exit status is `0`, `1` when a closing balance is under the floor, and `2`
-when either side could not be read, so it can stand in a pipeline.
+The exit status is `0`, `1` when a closing balance is under the floor (with
+`plan`: when no plan keeps it), and `2` when either side could not be read or
+SAP refused a write, so it can stand in a pipeline.
 
 ## What it reads
 
@@ -127,6 +131,10 @@ plane, and what comes from it is labelled `payment`, `credit` or `return` in
 the output, apart from what SAP said.
 
 Asking for the `camt.052` leaves one message in the bank's mailbox each time.
+
+It writes in one place, and only when told to: `plan --apply` sets and lifts
+`PaymentBlockingReason` on `A_SupplierInvoice` with a `PATCH`, behind an
+`X-CSRF-Token`. SAP carries the block to the open item.
 
 ## What it holds to
 
@@ -164,14 +172,20 @@ on its due date. That is what `payment_run` in
 it: which invoices to hold, and until which business day, so that no day
 closes under the floor. It is a small mixed-integer program, written in
 [JuMP](https://jump.dev) and solved by [HiGHS](https://highs.dev), and like the
-forecast it is a pure function of a snapshot. It has no command yet; from
-`julia --project=.`:
+forecast it is a pure function of a snapshot. On the demo week:
 
-```julia
-using AcmeTreasury
-plan = planpayments(snapshot(sap, bank, "ACME"), Scenario(days = 8, floor = 10_000_00))
-plan.holds                  # INV-E: a run would pay it Mon 12 Oct, the plan pays it Tue 13
-lowest(plan.forecast)       # 26,050.00 on Tue 13 Oct, where it was -16,450.00 on Mon 12
+```console
+$ bin/acme-treasury plan --days 8 --floor 10000
+ACME  EUR  as of 2026-10-05 09:00, before the cutoff
+A floor of 10,000.00 over 8 business days
+
+Hold
+  INV-E             1000016              61,450.00  due Sat 10 Oct, from Mon 12 Oct to Tue 13 Oct, 1 day
+
+Lowest: 26,050.00 on Tue 13 Oct, where it was -16,450.00 on Mon 12 Oct
+
+In SAP (nothing was changed: --apply does it)
+  INV-E             1000016              61,450.00  to block until Tue 13 Oct
 ```
 
 - **Nothing is held when nothing is wrong.** A forecast that keeps the floor
@@ -192,6 +206,34 @@ lowest(plan.forecast)       # 26,050.00 on Tue 13 Oct, where it was -16,450.00 o
 - **The solver chooses the days and nothing else.** The plan's forecast is
   made again by the forecast's own arithmetic, in whole minor units, and
   checked against the floor before it is returned.
+
+A plan is a list, and nothing pays later because a list says so: the payment
+run pays every open item that is due and not blocked. `plan --apply` makes the
+plan happen the way a user would, with a payment block on each held invoice,
+lifted on the morning the plan pays it. The plan is stored nowhere but SAP.
+Each business morning, in this order:
+
+1. Post the bank's statements, so SAP knows what was paid yesterday.
+2. `acme-treasury plan --apply --floor ...`: plan again from this morning's
+   snapshot, block what should wait, release what should go.
+3. The payment run.
+
+- **`plan` without `--apply` never writes.**
+- **It lifts only its own blocks.** Its holds carry one blocking reason,
+  `--hold-code`, `T` unless told otherwise. An invoice somebody blocked with
+  any other reason was blocked for a reason: it is never released, and never
+  held either.
+- **Applying twice changes nothing the second time.** The output says what was
+  changed and what was already so.
+- **A write SAP refuses is named, and the rest still happen.** The exit status
+  is then 2, and the next morning's apply tries it again.
+- **The forecast knows the schedule's block from anyone else's.** A blocked
+  item is listed under "Left out"; an item the schedule is holding is an
+  outflow on the day the schedule would let it go, planned again from the
+  same snapshot. Give the forecast the `--floor` the plan is applied with.
+
+mock-sap takes `T` as a blocking reason without being told of it. A real
+system has a configured list, and the schedule's code would have to be on it.
 
 ## What it cannot know
 
@@ -263,6 +305,7 @@ the line.
 | --- | --- |
 | `src/forecast.jl` | The forecast: a pure function of a snapshot and a scenario |
 | `src/schedule.jl` | The payment schedule: what to hold so the forecast keeps the floor |
+| `src/apply.jl` | What SAP has to be told for a plan to happen, and telling it |
 | `src/snapshot.jl` | What a snapshot is: open items, payments, credits, the balance, the day |
 | `src/wire.jl` | Reading both mocks over HTTP |
 | `src/calendar.jl`, `src/money.jl` | Business days, and amounts as whole minor units |

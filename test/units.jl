@@ -242,3 +242,37 @@ end
     @test closing(plan.forecast) == [25_000_00, 6_050_00, 5_050_00]
     @test reasons(plan.forecast) == reasons(plan.before)
 end
+
+@testset "the schedule's own block is an outflow on the day it lets go, not money left out" begin
+    items = [payable("INV-E", 61_450_00, Date(2026, 10, 10); block = "T", invoice = "5105600001/2026"),
+             payable("INV-C", 50_00, MON12; block = "A", invoice = "5105600002/2026"),
+             receivable("1800000001", 42_500_00, Date(2026, 10, 13))]
+    scenario = Scenario(days = 3, floor = 10_000_00)
+    f = forecast(week(; items), scenario)
+    @test closing(f) == [45_000_00, 26_050_00, 26_050_00]
+    @test reasons(f) == [:blocked]
+    @test only(x for x in f.flows if x.reference == "INV-E").day == Date(2026, 10, 13)
+    # With nothing to wait for, it goes on the day a run would pay it.
+    f = forecast(week(; position = 100_000_00, items), scenario)
+    @test closing(f) == [38_550_00, 81_050_00, 81_050_00]
+    # Under another code it is somebody else's block.
+    @test reasons(forecast(week(; items), Scenario(days = 3, holdcode = "Z"))) == [:blocked, :blocked]
+end
+
+@testset "what SAP has to be told: blocks to set, the schedule's own to lift, nobody else's" begin
+    told(world, scenario) = [(c.action, c.reference, c.until, c.outcome)
+                             for c in changes(world, planpayments(world, scenario))]
+    money_in = receivable("1800000001", 42_500_00, Date(2026, 10, 13))
+    scenario = Scenario(days = 3, floor = 10_000_00)
+    tuesday = Date(2026, 10, 13)
+    inv(block) = payable("INV-E", 61_450_00, Date(2026, 10, 10); block, invoice = "5105600001/2026")
+    other = payable("INV-C", 50_00, MON12; block = "A", invoice = "5105600002/2026")
+    @test told(week(items = [inv(""), other, money_in]), scenario) == [(:block, "INV-E", tuesday, :wanted)]
+    @test told(week(items = [inv("T"), other, money_in]), scenario) == [(:block, "INV-E", tuesday, :already)]
+    # On the day, or once there is money enough, the block is lifted.
+    @test told(week(today = tuesday, now = DateTime(tuesday) + Hour(9), items = [inv("T"), other],
+                    position = 87_500_00), scenario) == [(:release, "INV-E", nothing, :wanted)]
+    @test told(week(position = 100_000_00, items = [inv("T"), other, money_in]), scenario) ==
+          [(:release, "INV-E", nothing, :wanted)]
+    @test told(week(position = 100_000_00, items = [inv(""), other, money_in]), scenario) == []
+end

@@ -15,7 +15,7 @@ using UnicodePlots: stairs
 
 export cents, money, BankCalendar, isbusinessday, onorafter, addbusinessdays,
        OpenItem, BankPayment, BankCredit, Snapshot, Scenario, Flow, Aside, DayLine,
-       Forecast, forecast, snapshot, lowest, breach, Hold, Plan, planpayments, shortfall,
+       Forecast, forecast, snapshot, lowest, breach, Hold, Plan, planpayments, shortfall, Change, changes, apply,
        report, asjson, main
 
 include("money.jl")
@@ -24,6 +24,7 @@ include("snapshot.jl")
 include("forecast.jl")
 include("schedule.jl")
 include("wire.jl")
+include("apply.jl")
 include("report.jl")
 include("cli.jl")
 

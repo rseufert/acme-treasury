@@ -117,5 +117,88 @@ else
                 @test redirect_stderr(() -> main(["--sap", dead, "--bank", bank]), devnull) == 2
             end
         end
+        @testset "a plan applied in SAP: blocked, left alone, lifted on its day" begin
+            withmocks() do sap, bank
+                world(sap, bank, "reset")
+                world(sap, bank, "payable", UMBRELLA, "INV-B", "80800.00", "2026-10-05")
+                world(sap, bank, "payable", GLOBEX, "INV-C", "50.00", "2026-10-05", "A")
+                world(sap, bank, "payable", UMBRELLA, "INV-E", "61450.00", "2026-10-06")
+                owed = world(sap, bank, "receivable", CUSTOMER, "42500.00", "2026-10-07")["ACCOUNTINGDOCUMENT"]
+                scenario = Scenario(days = 4, floor = 10_000_00)
+                blocks() = Dict(i.reference => i.block for i in snapshot(sap, bank, "ACME").items
+                                if i.reference != "")
+                acme(args...) = redirect_stdout(devnull) do
+                    main(["plan", "--sap", sap, "--bank", bank, "--days", "4", "--floor", "10000", args...])
+                end
+                done() = [(c.action, c.reference, c.outcome) for c in
+                          apply(sap, changes(snapshot(sap, bank, "ACME"),
+                                             planpayments(snapshot(sap, bank, "ACME"), scenario)), "T")]
+
+                # Without the plan Tuesday closes at -17,250.00.
+                @test [d.closing for d in look(sap, bank; days = 4).days] ==
+                      [44_200_00, -17_250_00, 25_250_00, 25_250_00]
+                # Dry by default: the plan is printed and SAP is as it was.
+                @test acme() == 0
+                @test blocks() == Dict("INV-B" => "", "INV-C" => "A", "INV-E" => "")
+                @test acme("--apply") == 0
+                @test blocks() == Dict("INV-B" => "", "INV-C" => "A", "INV-E" => "T")
+                # The second time there is nothing to do.
+                @test done() == [(:block, "INV-E", :already)]
+
+                # Plan, apply, then the run: the order the README gives.
+                paid = String[]
+                mornings = Forecast[]
+                for today in Date(2026, 10, 5):Day(1):Date(2026, 10, 7)
+                    today == Date(2026, 10, 7) && bankpost(bank, "/_mock/credits",
+                        Dict("account" => "ACME", "amount" => 4_250_000, "note" => "your invoice $owed",
+                             "debtor" => Dict("name" => "Customer Ltd", "iban" => "NL14MOCK0000000002")))
+                    today == Date(2026, 10, 5) || @test acme("--apply") == 0
+                    push!(mornings, forecast(snapshot(sap, bank, "ACME"), scenario))
+                    run = world(sap, bank, "morning")
+                    append!(paid, [i["reference"] for i in run["items"] if i["status"] == "accepted"])
+                    today == Date(2026, 10, 6) && @test blocks()["INV-E"] == "T"
+                    night(sap, bank)
+                end
+                @test paid == ["INV-B", "INV-E"]
+                @test blocks()["INV-C"] == "A"              # somebody else's, and still theirs
+                actual = statements(bank)
+                @test [actual[Date(2026, 10, d)] for d in 5:7] == [44_200_00, 44_200_00, 25_250_00]
+                # And each morning's forecast, knowing the hold, said so.
+                for f in mornings
+                    @test all(row -> row[2] == row[3], compared(f, actual))
+                end
+            end
+        end
+
+        @testset "a write SAP refuses is named, and the rest still happen" begin
+            withmocks() do sap, bank
+                world(sap, bank, "reset")
+                world(sap, bank, "payable", GLOBEX, "INV-1", "70000.00", "2026-10-05")
+                world(sap, bank, "payable", UMBRELLA, "INV-2", "60000.00", "2026-10-05")
+                # A floor nothing can keep, so both are held to the last day.
+                scenario = Scenario(days = 3, floor = 100_000_00)
+                wanted() = changes(snapshot(sap, bank, "ACME"),
+                                   planpayments(snapshot(sap, bank, "ACME"), scenario))
+                @test [(c.reference, c.outcome) for c in wanted()] == [("INV-1", :wanted), ("INV-2", :wanted)]
+                HTTP.post(sap * "/_mock/faults", ["Content-Type" => "application/json"],
+                          JSON.json(Dict("method" => "PATCH", "match" => "A_SupplierInvoice",
+                                         "status" => 423, "message" => "locked by MOCKUSER", "count" => 1)))
+                written = apply(sap, wanted(), "T")
+                @test [(c.reference, c.outcome) for c in written] == [("INV-1", :refused), ("INV-2", :done)]
+                @test written[1].message == "SAP answered 423: locked by MOCKUSER"
+                @test [(c.reference, c.outcome) for c in wanted()] == [("INV-1", :wanted), ("INV-2", :already)]
+
+                # From the command line: 2 for the refusal, then 1, because the
+                # plan is in SAP and still no plan keeps this floor.
+                HTTP.post(sap * "/_mock/faults", ["Content-Type" => "application/json"],
+                          JSON.json(Dict("method" => "PATCH", "status" => 423, "count" => 1)))
+                acme() = redirect_stdout(devnull) do
+                    main(["plan", "--apply", "--sap", sap, "--bank", bank, "--days", "3", "--floor", "100000"])
+                end
+                @test acme() == 2
+                @test acme() == 1
+                @test all(c -> c.outcome == :already, wanted())
+            end
+        end
     end
 end
