@@ -207,6 +207,6 @@ Label(fig[3, 1], tell(s -> s.status * "_"); color = tell(s -> s.alarm ? PROBLEM 
 rowgap!(fig.layout, 6)
 
 scanlines!(fig)
-film(fig, FILM, "plan") do frame
+film(fig, FILM, "treasury_plan") do frame
     shown[] = frame
 end

@@ -41,10 +41,10 @@ end
 scanlines!(fig) = linesegments!(fig.scene, [Point2f(x, y) for y in 0:5:450 for x in (0, 800)];
                                 color = ("#000000", 0.16), linewidth = 2)
 
-"Record `frames` to docs/`name`.mp4 and .gif, showing each with `show`."
+"Record `frames` to docs/films/`name`.mp4 and .gif, showing each with `show`."
 function film(show, fig, frames, name)
     for extension in ("mp4", "gif")
-        path = joinpath(@__DIR__, "..", "docs", "$name.$extension")
+        path = joinpath(@__DIR__, "..", "docs", "films", "$name.$extension")
         record(show, fig, path, frames; framerate = FPS, px_per_unit = 1)
         println(path, "  ", length(frames), " frames, ", round(length(frames) / FPS; digits = 1), "s")
     end

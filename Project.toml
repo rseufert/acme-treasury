@@ -23,8 +23,9 @@ UnicodePlots = "3.9.0"
 julia = "1.13"
 
 [extras]
+SHA = "ea8e919c-243c-51af-8825-aaa63cd721ce"
 Sockets = "6462fe0b-24de-5631-8697-dd941f90decc"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Sockets", "Test"]
+test = ["SHA", "Sockets", "Test"]
