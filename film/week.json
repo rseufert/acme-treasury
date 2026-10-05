@@ -1,0 +1,1396 @@
+{
+  "account": "ACME",
+  "currency": "EUR",
+  "forecasts": [
+    {
+      "account": "ACME",
+      "asOf": "2026-10-05T09:00:00",
+      "currency": "EUR",
+      "days": [
+        {
+          "closing": 11450000,
+          "day": "2026-10-05",
+          "in": 0,
+          "opening": 12500000,
+          "out": -1050000
+        },
+        {
+          "closing": 11650000,
+          "day": "2026-10-06",
+          "in": 200000,
+          "opening": 11450000,
+          "out": 0
+        },
+        {
+          "closing": 3570000,
+          "day": "2026-10-07",
+          "in": 0,
+          "opening": 11650000,
+          "out": -8080000
+        },
+        {
+          "closing": 3570000,
+          "day": "2026-10-08",
+          "in": 0,
+          "opening": 3570000,
+          "out": 0
+        },
+        {
+          "closing": 3570000,
+          "day": "2026-10-09",
+          "in": 0,
+          "opening": 3570000,
+          "out": 0
+        },
+        {
+          "closing": -2575000,
+          "day": "2026-10-12",
+          "in": 0,
+          "opening": 3570000,
+          "out": -6145000
+        },
+        {
+          "closing": 1675000,
+          "day": "2026-10-13",
+          "in": 4250000,
+          "opening": -2575000,
+          "out": 0
+        },
+        {
+          "closing": 1675000,
+          "day": "2026-10-14",
+          "in": 0,
+          "opening": 1675000,
+          "out": 0
+        }
+      ],
+      "floor": 0,
+      "flows": [
+        {
+          "amount": -120000,
+          "day": "2026-10-05",
+          "note": "",
+          "party": "1000013",
+          "reference": "INV-A",
+          "source": "payable"
+        },
+        {
+          "amount": -930000,
+          "day": "2026-10-05",
+          "note": "",
+          "party": "1000014",
+          "reference": "INV-D",
+          "source": "payable"
+        },
+        {
+          "amount": 200000,
+          "day": "2026-10-06",
+          "note": " PAYMENT",
+          "party": "Customer Ltd",
+          "reference": "",
+          "source": "credit"
+        },
+        {
+          "amount": -8080000,
+          "day": "2026-10-07",
+          "note": "",
+          "party": "1000016",
+          "reference": "INV-B",
+          "source": "payable"
+        },
+        {
+          "amount": -6145000,
+          "day": "2026-10-12",
+          "note": "",
+          "party": "1000016",
+          "reference": "INV-E",
+          "source": "payable"
+        },
+        {
+          "amount": 4250000,
+          "day": "2026-10-13",
+          "note": "",
+          "party": "1000006",
+          "reference": "0100000012",
+          "source": "receivable"
+        }
+      ],
+      "leftOut": [
+        {
+          "amount": -5000,
+          "note": "payment block A",
+          "party": "1000013",
+          "reason": "blocked",
+          "reference": "INV-C"
+        },
+        {
+          "amount": 2949620,
+          "note": "due 2025-10-12",
+          "party": "1000006",
+          "reason": "overdue",
+          "reference": "0100000001"
+        },
+        {
+          "amount": 21112492,
+          "note": "due 2026-01-29",
+          "party": "1000003",
+          "reason": "overdue",
+          "reference": "0100000002"
+        },
+        {
+          "amount": 11030392,
+          "note": "due 2026-02-01",
+          "party": "1000019",
+          "reason": "overdue",
+          "reference": "0100000003"
+        },
+        {
+          "amount": 10279565,
+          "note": "due 2025-11-27",
+          "party": "1000022",
+          "reason": "overdue",
+          "reference": "0100000004"
+        },
+        {
+          "amount": 22262112,
+          "note": "due 2026-01-15",
+          "party": "1000002",
+          "reason": "overdue",
+          "reference": "0100000005"
+        },
+        {
+          "amount": 853325,
+          "note": "due 2026-02-10",
+          "party": "1000006",
+          "reason": "overdue",
+          "reference": "0100000006"
+        }
+      ],
+      "lowest": {
+        "closing": -2575000,
+        "day": "2026-10-12"
+      },
+      "pastCutoff": false,
+      "position": 12500000,
+      "underFloorFrom": "2026-10-12"
+    },
+    {
+      "account": "ACME",
+      "asOf": "2026-10-06T09:00:01",
+      "currency": "EUR",
+      "days": [
+        {
+          "closing": 12580000,
+          "day": "2026-10-06",
+          "in": 0,
+          "opening": 12580000,
+          "out": 0
+        },
+        {
+          "closing": 4500000,
+          "day": "2026-10-07",
+          "in": 0,
+          "opening": 12580000,
+          "out": -8080000
+        },
+        {
+          "closing": 4500000,
+          "day": "2026-10-08",
+          "in": 0,
+          "opening": 4500000,
+          "out": 0
+        },
+        {
+          "closing": 4500000,
+          "day": "2026-10-09",
+          "in": 0,
+          "opening": 4500000,
+          "out": 0
+        },
+        {
+          "closing": -1645000,
+          "day": "2026-10-12",
+          "in": 0,
+          "opening": 4500000,
+          "out": -6145000
+        },
+        {
+          "closing": 2605000,
+          "day": "2026-10-13",
+          "in": 4250000,
+          "opening": -1645000,
+          "out": 0
+        },
+        {
+          "closing": 2605000,
+          "day": "2026-10-14",
+          "in": 0,
+          "opening": 2605000,
+          "out": 0
+        }
+      ],
+      "floor": 0,
+      "flows": [
+        {
+          "amount": -8080000,
+          "day": "2026-10-07",
+          "note": "",
+          "party": "1000016",
+          "reference": "INV-B",
+          "source": "payable"
+        },
+        {
+          "amount": -6145000,
+          "day": "2026-10-12",
+          "note": "",
+          "party": "1000016",
+          "reference": "INV-E",
+          "source": "payable"
+        },
+        {
+          "amount": 4250000,
+          "day": "2026-10-13",
+          "note": "",
+          "party": "1000006",
+          "reference": "0100000012",
+          "source": "receivable"
+        }
+      ],
+      "leftOut": [
+        {
+          "amount": -930000,
+          "note": "the bank refused it: AC04",
+          "party": "1000014",
+          "reason": "rejected",
+          "reference": "INV-D"
+        },
+        {
+          "amount": -5000,
+          "note": "payment block A",
+          "party": "1000013",
+          "reason": "blocked",
+          "reference": "INV-C"
+        },
+        {
+          "amount": 2949620,
+          "note": "due 2025-10-12",
+          "party": "1000006",
+          "reason": "overdue",
+          "reference": "0100000001"
+        },
+        {
+          "amount": 21112492,
+          "note": "due 2026-01-29",
+          "party": "1000003",
+          "reason": "overdue",
+          "reference": "0100000002"
+        },
+        {
+          "amount": 11030392,
+          "note": "due 2026-02-01",
+          "party": "1000019",
+          "reason": "overdue",
+          "reference": "0100000003"
+        },
+        {
+          "amount": 10279565,
+          "note": "due 2025-11-27",
+          "party": "1000022",
+          "reason": "overdue",
+          "reference": "0100000004"
+        },
+        {
+          "amount": 22262112,
+          "note": "due 2026-01-15",
+          "party": "1000002",
+          "reason": "overdue",
+          "reference": "0100000005"
+        },
+        {
+          "amount": 853325,
+          "note": "due 2026-02-10",
+          "party": "1000006",
+          "reason": "overdue",
+          "reference": "0100000006"
+        }
+      ],
+      "lowest": {
+        "closing": -1645000,
+        "day": "2026-10-12"
+      },
+      "pastCutoff": false,
+      "position": 12580000,
+      "underFloorFrom": "2026-10-12"
+    },
+    {
+      "account": "ACME",
+      "asOf": "2026-10-07T09:00:01",
+      "currency": "EUR",
+      "days": [
+        {
+          "closing": 4500000,
+          "day": "2026-10-07",
+          "in": 0,
+          "opening": 12580000,
+          "out": -8080000
+        },
+        {
+          "closing": 4500000,
+          "day": "2026-10-08",
+          "in": 0,
+          "opening": 4500000,
+          "out": 0
+        },
+        {
+          "closing": 4500000,
+          "day": "2026-10-09",
+          "in": 0,
+          "opening": 4500000,
+          "out": 0
+        },
+        {
+          "closing": -1645000,
+          "day": "2026-10-12",
+          "in": 0,
+          "opening": 4500000,
+          "out": -6145000
+        },
+        {
+          "closing": 2605000,
+          "day": "2026-10-13",
+          "in": 4250000,
+          "opening": -1645000,
+          "out": 0
+        },
+        {
+          "closing": 2605000,
+          "day": "2026-10-14",
+          "in": 0,
+          "opening": 2605000,
+          "out": 0
+        }
+      ],
+      "floor": 0,
+      "flows": [
+        {
+          "amount": -8080000,
+          "day": "2026-10-07",
+          "note": "",
+          "party": "1000016",
+          "reference": "INV-B",
+          "source": "payable"
+        },
+        {
+          "amount": -6145000,
+          "day": "2026-10-12",
+          "note": "",
+          "party": "1000016",
+          "reference": "INV-E",
+          "source": "payable"
+        },
+        {
+          "amount": 4250000,
+          "day": "2026-10-13",
+          "note": "",
+          "party": "1000006",
+          "reference": "0100000012",
+          "source": "receivable"
+        }
+      ],
+      "leftOut": [
+        {
+          "amount": -930000,
+          "note": "the bank refused it: AC04",
+          "party": "1000014",
+          "reason": "rejected",
+          "reference": "INV-D"
+        },
+        {
+          "amount": -5000,
+          "note": "payment block A",
+          "party": "1000013",
+          "reason": "blocked",
+          "reference": "INV-C"
+        },
+        {
+          "amount": 2949620,
+          "note": "due 2025-10-12",
+          "party": "1000006",
+          "reason": "overdue",
+          "reference": "0100000001"
+        },
+        {
+          "amount": 21112492,
+          "note": "due 2026-01-29",
+          "party": "1000003",
+          "reason": "overdue",
+          "reference": "0100000002"
+        },
+        {
+          "amount": 11030392,
+          "note": "due 2026-02-01",
+          "party": "1000019",
+          "reason": "overdue",
+          "reference": "0100000003"
+        },
+        {
+          "amount": 10279565,
+          "note": "due 2025-11-27",
+          "party": "1000022",
+          "reason": "overdue",
+          "reference": "0100000004"
+        },
+        {
+          "amount": 22262112,
+          "note": "due 2026-01-15",
+          "party": "1000002",
+          "reason": "overdue",
+          "reference": "0100000005"
+        },
+        {
+          "amount": 853325,
+          "note": "due 2026-02-10",
+          "party": "1000006",
+          "reason": "overdue",
+          "reference": "0100000006"
+        }
+      ],
+      "lowest": {
+        "closing": -1645000,
+        "day": "2026-10-12"
+      },
+      "pastCutoff": false,
+      "position": 12580000,
+      "underFloorFrom": "2026-10-12"
+    },
+    {
+      "account": "ACME",
+      "asOf": "2026-10-08T09:00:01",
+      "currency": "EUR",
+      "days": [
+        {
+          "closing": 4500000,
+          "day": "2026-10-08",
+          "in": 0,
+          "opening": 4500000,
+          "out": 0
+        },
+        {
+          "closing": 4500000,
+          "day": "2026-10-09",
+          "in": 0,
+          "opening": 4500000,
+          "out": 0
+        },
+        {
+          "closing": -1645000,
+          "day": "2026-10-12",
+          "in": 0,
+          "opening": 4500000,
+          "out": -6145000
+        },
+        {
+          "closing": 2605000,
+          "day": "2026-10-13",
+          "in": 4250000,
+          "opening": -1645000,
+          "out": 0
+        },
+        {
+          "closing": 2605000,
+          "day": "2026-10-14",
+          "in": 0,
+          "opening": 2605000,
+          "out": 0
+        }
+      ],
+      "floor": 0,
+      "flows": [
+        {
+          "amount": -6145000,
+          "day": "2026-10-12",
+          "note": "",
+          "party": "1000016",
+          "reference": "INV-E",
+          "source": "payable"
+        },
+        {
+          "amount": 4250000,
+          "day": "2026-10-13",
+          "note": "",
+          "party": "1000006",
+          "reference": "0100000012",
+          "source": "receivable"
+        }
+      ],
+      "leftOut": [
+        {
+          "amount": -930000,
+          "note": "the bank refused it: AC04",
+          "party": "1000014",
+          "reason": "rejected",
+          "reference": "INV-D"
+        },
+        {
+          "amount": -5000,
+          "note": "payment block A",
+          "party": "1000013",
+          "reason": "blocked",
+          "reference": "INV-C"
+        },
+        {
+          "amount": 2949620,
+          "note": "due 2025-10-12",
+          "party": "1000006",
+          "reason": "overdue",
+          "reference": "0100000001"
+        },
+        {
+          "amount": 21112492,
+          "note": "due 2026-01-29",
+          "party": "1000003",
+          "reason": "overdue",
+          "reference": "0100000002"
+        },
+        {
+          "amount": 11030392,
+          "note": "due 2026-02-01",
+          "party": "1000019",
+          "reason": "overdue",
+          "reference": "0100000003"
+        },
+        {
+          "amount": 10279565,
+          "note": "due 2025-11-27",
+          "party": "1000022",
+          "reason": "overdue",
+          "reference": "0100000004"
+        },
+        {
+          "amount": 22262112,
+          "note": "due 2026-01-15",
+          "party": "1000002",
+          "reason": "overdue",
+          "reference": "0100000005"
+        },
+        {
+          "amount": 853325,
+          "note": "due 2026-02-10",
+          "party": "1000006",
+          "reason": "overdue",
+          "reference": "0100000006"
+        }
+      ],
+      "lowest": {
+        "closing": -1645000,
+        "day": "2026-10-12"
+      },
+      "pastCutoff": false,
+      "position": 4500000,
+      "underFloorFrom": "2026-10-12"
+    },
+    {
+      "account": "ACME",
+      "asOf": "2026-10-09T09:00:01",
+      "currency": "EUR",
+      "days": [
+        {
+          "closing": 4500000,
+          "day": "2026-10-09",
+          "in": 0,
+          "opening": 4500000,
+          "out": 0
+        },
+        {
+          "closing": -1645000,
+          "day": "2026-10-12",
+          "in": 0,
+          "opening": 4500000,
+          "out": -6145000
+        },
+        {
+          "closing": 2605000,
+          "day": "2026-10-13",
+          "in": 4250000,
+          "opening": -1645000,
+          "out": 0
+        },
+        {
+          "closing": 2605000,
+          "day": "2026-10-14",
+          "in": 0,
+          "opening": 2605000,
+          "out": 0
+        }
+      ],
+      "floor": 0,
+      "flows": [
+        {
+          "amount": -6145000,
+          "day": "2026-10-12",
+          "note": "",
+          "party": "1000016",
+          "reference": "INV-E",
+          "source": "payable"
+        },
+        {
+          "amount": 4250000,
+          "day": "2026-10-13",
+          "note": "",
+          "party": "1000006",
+          "reference": "0100000012",
+          "source": "receivable"
+        }
+      ],
+      "leftOut": [
+        {
+          "amount": -930000,
+          "note": "the bank refused it: AC04",
+          "party": "1000014",
+          "reason": "rejected",
+          "reference": "INV-D"
+        },
+        {
+          "amount": -5000,
+          "note": "payment block A",
+          "party": "1000013",
+          "reason": "blocked",
+          "reference": "INV-C"
+        },
+        {
+          "amount": 2949620,
+          "note": "due 2025-10-12",
+          "party": "1000006",
+          "reason": "overdue",
+          "reference": "0100000001"
+        },
+        {
+          "amount": 21112492,
+          "note": "due 2026-01-29",
+          "party": "1000003",
+          "reason": "overdue",
+          "reference": "0100000002"
+        },
+        {
+          "amount": 11030392,
+          "note": "due 2026-02-01",
+          "party": "1000019",
+          "reason": "overdue",
+          "reference": "0100000003"
+        },
+        {
+          "amount": 10279565,
+          "note": "due 2025-11-27",
+          "party": "1000022",
+          "reason": "overdue",
+          "reference": "0100000004"
+        },
+        {
+          "amount": 22262112,
+          "note": "due 2026-01-15",
+          "party": "1000002",
+          "reason": "overdue",
+          "reference": "0100000005"
+        },
+        {
+          "amount": 853325,
+          "note": "due 2026-02-10",
+          "party": "1000006",
+          "reason": "overdue",
+          "reference": "0100000006"
+        }
+      ],
+      "lowest": {
+        "closing": -1645000,
+        "day": "2026-10-12"
+      },
+      "pastCutoff": false,
+      "position": 4500000,
+      "underFloorFrom": "2026-10-12"
+    },
+    {
+      "account": "ACME",
+      "asOf": "2026-10-10T09:00:01",
+      "currency": "EUR",
+      "days": [
+        {
+          "closing": -1645000,
+          "day": "2026-10-12",
+          "in": 0,
+          "opening": 4500000,
+          "out": -6145000
+        },
+        {
+          "closing": 2605000,
+          "day": "2026-10-13",
+          "in": 4250000,
+          "opening": -1645000,
+          "out": 0
+        },
+        {
+          "closing": 2605000,
+          "day": "2026-10-14",
+          "in": 0,
+          "opening": 2605000,
+          "out": 0
+        }
+      ],
+      "floor": 0,
+      "flows": [
+        {
+          "amount": -6145000,
+          "day": "2026-10-12",
+          "note": "",
+          "party": "1000016",
+          "reference": "INV-E",
+          "source": "payable"
+        },
+        {
+          "amount": 4250000,
+          "day": "2026-10-13",
+          "note": "",
+          "party": "1000006",
+          "reference": "0100000012",
+          "source": "receivable"
+        }
+      ],
+      "leftOut": [
+        {
+          "amount": -930000,
+          "note": "the bank refused it: AC04",
+          "party": "1000014",
+          "reason": "rejected",
+          "reference": "INV-D"
+        },
+        {
+          "amount": -5000,
+          "note": "payment block A",
+          "party": "1000013",
+          "reason": "blocked",
+          "reference": "INV-C"
+        },
+        {
+          "amount": 2949620,
+          "note": "due 2025-10-12",
+          "party": "1000006",
+          "reason": "overdue",
+          "reference": "0100000001"
+        },
+        {
+          "amount": 21112492,
+          "note": "due 2026-01-29",
+          "party": "1000003",
+          "reason": "overdue",
+          "reference": "0100000002"
+        },
+        {
+          "amount": 11030392,
+          "note": "due 2026-02-01",
+          "party": "1000019",
+          "reason": "overdue",
+          "reference": "0100000003"
+        },
+        {
+          "amount": 10279565,
+          "note": "due 2025-11-27",
+          "party": "1000022",
+          "reason": "overdue",
+          "reference": "0100000004"
+        },
+        {
+          "amount": 22262112,
+          "note": "due 2026-01-15",
+          "party": "1000002",
+          "reason": "overdue",
+          "reference": "0100000005"
+        },
+        {
+          "amount": 853325,
+          "note": "due 2026-02-10",
+          "party": "1000006",
+          "reason": "overdue",
+          "reference": "0100000006"
+        }
+      ],
+      "lowest": {
+        "closing": -1645000,
+        "day": "2026-10-12"
+      },
+      "pastCutoff": false,
+      "position": 4500000,
+      "underFloorFrom": "2026-10-12"
+    },
+    {
+      "account": "ACME",
+      "asOf": "2026-10-11T09:00:02",
+      "currency": "EUR",
+      "days": [
+        {
+          "closing": -1645000,
+          "day": "2026-10-12",
+          "in": 0,
+          "opening": 4500000,
+          "out": -6145000
+        },
+        {
+          "closing": 2605000,
+          "day": "2026-10-13",
+          "in": 4250000,
+          "opening": -1645000,
+          "out": 0
+        },
+        {
+          "closing": 2605000,
+          "day": "2026-10-14",
+          "in": 0,
+          "opening": 2605000,
+          "out": 0
+        }
+      ],
+      "floor": 0,
+      "flows": [
+        {
+          "amount": -6145000,
+          "day": "2026-10-12",
+          "note": "",
+          "party": "1000016",
+          "reference": "INV-E",
+          "source": "payable"
+        },
+        {
+          "amount": 4250000,
+          "day": "2026-10-13",
+          "note": "",
+          "party": "1000006",
+          "reference": "0100000012",
+          "source": "receivable"
+        }
+      ],
+      "leftOut": [
+        {
+          "amount": -930000,
+          "note": "the bank refused it: AC04",
+          "party": "1000014",
+          "reason": "rejected",
+          "reference": "INV-D"
+        },
+        {
+          "amount": -5000,
+          "note": "payment block A",
+          "party": "1000013",
+          "reason": "blocked",
+          "reference": "INV-C"
+        },
+        {
+          "amount": 2949620,
+          "note": "due 2025-10-12",
+          "party": "1000006",
+          "reason": "overdue",
+          "reference": "0100000001"
+        },
+        {
+          "amount": 21112492,
+          "note": "due 2026-01-29",
+          "party": "1000003",
+          "reason": "overdue",
+          "reference": "0100000002"
+        },
+        {
+          "amount": 11030392,
+          "note": "due 2026-02-01",
+          "party": "1000019",
+          "reason": "overdue",
+          "reference": "0100000003"
+        },
+        {
+          "amount": 10279565,
+          "note": "due 2025-11-27",
+          "party": "1000022",
+          "reason": "overdue",
+          "reference": "0100000004"
+        },
+        {
+          "amount": 22262112,
+          "note": "due 2026-01-15",
+          "party": "1000002",
+          "reason": "overdue",
+          "reference": "0100000005"
+        },
+        {
+          "amount": 853325,
+          "note": "due 2026-02-10",
+          "party": "1000006",
+          "reason": "overdue",
+          "reference": "0100000006"
+        }
+      ],
+      "lowest": {
+        "closing": -1645000,
+        "day": "2026-10-12"
+      },
+      "pastCutoff": false,
+      "position": 4500000,
+      "underFloorFrom": "2026-10-12"
+    },
+    {
+      "account": "ACME",
+      "asOf": "2026-10-12T09:00:02",
+      "currency": "EUR",
+      "days": [
+        {
+          "closing": -1645000,
+          "day": "2026-10-12",
+          "in": 0,
+          "opening": 4500000,
+          "out": -6145000
+        },
+        {
+          "closing": 2605000,
+          "day": "2026-10-13",
+          "in": 4250000,
+          "opening": -1645000,
+          "out": 0
+        },
+        {
+          "closing": 2605000,
+          "day": "2026-10-14",
+          "in": 0,
+          "opening": 2605000,
+          "out": 0
+        }
+      ],
+      "floor": 0,
+      "flows": [
+        {
+          "amount": -6145000,
+          "day": "2026-10-12",
+          "note": "",
+          "party": "1000016",
+          "reference": "INV-E",
+          "source": "payable"
+        },
+        {
+          "amount": 4250000,
+          "day": "2026-10-13",
+          "note": "",
+          "party": "1000006",
+          "reference": "0100000012",
+          "source": "receivable"
+        }
+      ],
+      "leftOut": [
+        {
+          "amount": -930000,
+          "note": "the bank refused it: AC04",
+          "party": "1000014",
+          "reason": "rejected",
+          "reference": "INV-D"
+        },
+        {
+          "amount": -5000,
+          "note": "payment block A",
+          "party": "1000013",
+          "reason": "blocked",
+          "reference": "INV-C"
+        },
+        {
+          "amount": 2949620,
+          "note": "due 2025-10-12",
+          "party": "1000006",
+          "reason": "overdue",
+          "reference": "0100000001"
+        },
+        {
+          "amount": 21112492,
+          "note": "due 2026-01-29",
+          "party": "1000003",
+          "reason": "overdue",
+          "reference": "0100000002"
+        },
+        {
+          "amount": 11030392,
+          "note": "due 2026-02-01",
+          "party": "1000019",
+          "reason": "overdue",
+          "reference": "0100000003"
+        },
+        {
+          "amount": 10279565,
+          "note": "due 2025-11-27",
+          "party": "1000022",
+          "reason": "overdue",
+          "reference": "0100000004"
+        },
+        {
+          "amount": 22262112,
+          "note": "due 2026-01-15",
+          "party": "1000002",
+          "reason": "overdue",
+          "reference": "0100000005"
+        },
+        {
+          "amount": 853325,
+          "note": "due 2026-02-10",
+          "party": "1000006",
+          "reason": "overdue",
+          "reference": "0100000006"
+        }
+      ],
+      "lowest": {
+        "closing": -1645000,
+        "day": "2026-10-12"
+      },
+      "pastCutoff": false,
+      "position": 4500000,
+      "underFloorFrom": "2026-10-12"
+    },
+    {
+      "account": "ACME",
+      "asOf": "2026-10-13T09:00:02",
+      "currency": "EUR",
+      "days": [
+        {
+          "closing": 2605000,
+          "day": "2026-10-13",
+          "in": 4250000,
+          "opening": -1645000,
+          "out": 0
+        },
+        {
+          "closing": 2605000,
+          "day": "2026-10-14",
+          "in": 0,
+          "opening": 2605000,
+          "out": 0
+        }
+      ],
+      "floor": 0,
+      "flows": [
+        {
+          "amount": 4250000,
+          "day": "2026-10-13",
+          "note": "",
+          "party": "1000006",
+          "reference": "0100000012",
+          "source": "receivable"
+        }
+      ],
+      "leftOut": [
+        {
+          "amount": -930000,
+          "note": "the bank refused it: AC04",
+          "party": "1000014",
+          "reason": "rejected",
+          "reference": "INV-D"
+        },
+        {
+          "amount": -5000,
+          "note": "payment block A",
+          "party": "1000013",
+          "reason": "blocked",
+          "reference": "INV-C"
+        },
+        {
+          "amount": 2949620,
+          "note": "due 2025-10-12",
+          "party": "1000006",
+          "reason": "overdue",
+          "reference": "0100000001"
+        },
+        {
+          "amount": 21112492,
+          "note": "due 2026-01-29",
+          "party": "1000003",
+          "reason": "overdue",
+          "reference": "0100000002"
+        },
+        {
+          "amount": 11030392,
+          "note": "due 2026-02-01",
+          "party": "1000019",
+          "reason": "overdue",
+          "reference": "0100000003"
+        },
+        {
+          "amount": 10279565,
+          "note": "due 2025-11-27",
+          "party": "1000022",
+          "reason": "overdue",
+          "reference": "0100000004"
+        },
+        {
+          "amount": 22262112,
+          "note": "due 2026-01-15",
+          "party": "1000002",
+          "reason": "overdue",
+          "reference": "0100000005"
+        },
+        {
+          "amount": 853325,
+          "note": "due 2026-02-10",
+          "party": "1000006",
+          "reason": "overdue",
+          "reference": "0100000006"
+        }
+      ],
+      "lowest": {
+        "closing": 2605000,
+        "day": "2026-10-13"
+      },
+      "pastCutoff": false,
+      "position": -1645000,
+      "underFloorFrom": null
+    },
+    {
+      "account": "ACME",
+      "asOf": "2026-10-14T09:00:02",
+      "currency": "EUR",
+      "days": [
+        {
+          "closing": 2605000,
+          "day": "2026-10-14",
+          "in": 0,
+          "opening": 2605000,
+          "out": 0
+        }
+      ],
+      "floor": 0,
+      "flows": [],
+      "leftOut": [
+        {
+          "amount": -930000,
+          "note": "the bank refused it: AC04",
+          "party": "1000014",
+          "reason": "rejected",
+          "reference": "INV-D"
+        },
+        {
+          "amount": -5000,
+          "note": "payment block A",
+          "party": "1000013",
+          "reason": "blocked",
+          "reference": "INV-C"
+        },
+        {
+          "amount": 2949620,
+          "note": "due 2025-10-12",
+          "party": "1000006",
+          "reason": "overdue",
+          "reference": "0100000001"
+        },
+        {
+          "amount": 21112492,
+          "note": "due 2026-01-29",
+          "party": "1000003",
+          "reason": "overdue",
+          "reference": "0100000002"
+        },
+        {
+          "amount": 11030392,
+          "note": "due 2026-02-01",
+          "party": "1000019",
+          "reason": "overdue",
+          "reference": "0100000003"
+        },
+        {
+          "amount": 10279565,
+          "note": "due 2025-11-27",
+          "party": "1000022",
+          "reason": "overdue",
+          "reference": "0100000004"
+        },
+        {
+          "amount": 22262112,
+          "note": "due 2026-01-15",
+          "party": "1000002",
+          "reason": "overdue",
+          "reference": "0100000005"
+        },
+        {
+          "amount": 853325,
+          "note": "due 2026-02-10",
+          "party": "1000006",
+          "reason": "overdue",
+          "reference": "0100000006"
+        }
+      ],
+      "lowest": {
+        "closing": 2605000,
+        "day": "2026-10-14"
+      },
+      "pastCutoff": false,
+      "position": 2605000,
+      "underFloorFrom": null
+    }
+  ],
+  "runs": [
+    {
+      "day": "2026-10-05",
+      "items": [
+        {
+          "reference": "INV-A",
+          "status": "accepted",
+          "reason": "",
+          "amount": "1200.00"
+        },
+        {
+          "reference": "INV-D",
+          "status": "rejected",
+          "reason": "AC04",
+          "amount": "9300.00"
+        }
+      ],
+      "problems": []
+    },
+    {
+      "day": "2026-10-06",
+      "items": [
+        {
+          "reference": "INV-D",
+          "status": "rejected",
+          "reason": "AC04",
+          "amount": "9300.00"
+        }
+      ],
+      "problems": []
+    },
+    {
+      "day": "2026-10-07",
+      "items": [
+        {
+          "reference": "INV-D",
+          "status": "rejected",
+          "reason": "AC04",
+          "amount": "9300.00"
+        },
+        {
+          "reference": "INV-B",
+          "status": "accepted",
+          "reason": "",
+          "amount": "80800.00"
+        }
+      ],
+      "problems": [
+        "statement 2 for 2026-10-06 has a credit of 2000.00 quoting NOTPROVIDED that is money arriving, not a payment coming back; it was posted to SAP without that reference, so that SAP does not reopen an invoice it names"
+      ]
+    },
+    {
+      "day": "2026-10-08",
+      "items": [
+        {
+          "reference": "INV-D",
+          "status": "rejected",
+          "reason": "AC04",
+          "amount": "9300.00"
+        }
+      ],
+      "problems": []
+    },
+    {
+      "day": "2026-10-09",
+      "items": [
+        {
+          "reference": "INV-D",
+          "status": "rejected",
+          "reason": "AC04",
+          "amount": "9300.00"
+        }
+      ],
+      "problems": []
+    },
+    {
+      "day": "2026-10-10",
+      "items": [],
+      "problems": []
+    },
+    {
+      "day": "2026-10-11",
+      "items": [],
+      "problems": []
+    },
+    {
+      "day": "2026-10-12",
+      "items": [
+        {
+          "reference": "INV-D",
+          "status": "rejected",
+          "reason": "AC04",
+          "amount": "9300.00"
+        },
+        {
+          "reference": "INV-E",
+          "status": "accepted",
+          "reason": "",
+          "amount": "61450.00"
+        }
+      ],
+      "problems": []
+    },
+    {
+      "day": "2026-10-13",
+      "items": [
+        {
+          "reference": "INV-D",
+          "status": "rejected",
+          "reason": "AC04",
+          "amount": "9300.00"
+        }
+      ],
+      "problems": []
+    },
+    {
+      "day": "2026-10-14",
+      "items": [
+        {
+          "reference": "INV-D",
+          "status": "rejected",
+          "reason": "AC04",
+          "amount": "9300.00"
+        }
+      ],
+      "problems": [
+        "statement 7 for 2026-10-13 has a credit of 42500.00 quoting NOTPROVIDED that is money arriving, not a payment coming back; it was posted to SAP without that reference, so that SAP does not reopen an invoice it names"
+      ]
+    }
+  ],
+  "source": "acme-treasury film/capture.jl; clocks pinned 2026-10-05T09:00",
+  "statements": [
+    {
+      "closing": 12380000,
+      "day": "2026-10-05"
+    },
+    {
+      "closing": 12580000,
+      "day": "2026-10-06"
+    },
+    {
+      "closing": 4500000,
+      "day": "2026-10-07"
+    },
+    {
+      "closing": 4500000,
+      "day": "2026-10-08"
+    },
+    {
+      "closing": 4500000,
+      "day": "2026-10-09"
+    },
+    {
+      "closing": -1645000,
+      "day": "2026-10-12"
+    },
+    {
+      "closing": 2605000,
+      "day": "2026-10-13"
+    },
+    {
+      "closing": 2605000,
+      "day": "2026-10-14"
+    }
+  ],
+  "versions": {
+    "mock-acme": "0.1.0.dev0",
+    "mock-bank": "0.7.0",
+    "mock-sap": "0.17.1"
+  }
+}

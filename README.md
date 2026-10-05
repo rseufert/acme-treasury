@@ -20,6 +20,10 @@ mock-bank  ──camt.052, payments,─────▶
 mock-bank  ──camt.053──▶  the same figure, or the test fails
 ```
 
+![Monday's forecast is drawn as a line. Monday's statement lands off it, in red, by 9,300.00. Tuesday's forecast replaces the line and names the invoice the bank refused, and the next seven statements land on it](docs/week.gif)
+
+*mock-sap 0.17.1 and mock-bank 0.7.0, played for a week by mock-acme's payment run: `film/capture.jl`. Every block is a `camt.053`.*
+
 Most cash forecasts are never held to anything: by the time the day arrives
 nobody looks back. Both mocks keep a clock a test can move, so here Monday's
 forecast for the following Monday is compared, to the cent, with the statement
@@ -190,6 +194,32 @@ They need a Python with both mocks and mock-acme installed, as in the quick
 start: `MOCK_PYTHON`, or `python3`.
 Without one they are skipped with a warning and the unit tests still run.
 
+## The film
+
+The film at the top is a real run. `film/capture.jl` starts both mocks, takes
+the forecast every morning before the payment run and reads the statement
+every night, and writes the two to `film/week.json`. `film/render.jl` draws
+from that file alone, with [Makie](https://makie.org), in the look of the
+films of the mocks themselves: a phosphor terminal, and red for a problem and
+nothing else.
+
+```bash
+julia --project=. film/capture.jl                               # needs the mocks, as the tests do
+julia --project=film -e 'using Pkg; Pkg.instantiate()'          # once: Makie is large
+julia --project=film film/render.jl                             # docs/week.gif and docs/week.mp4
+```
+
+Makie is in its own environment under `film/`, so the forecast does not take
+it as a dependency. The renderer needs the VT323 font:
+`brew install --cask font-vt323`.
+
+What the film shows is decided by the capture, not the renderer. One
+supplier's account is closed at the bank and SAP does not know, so Monday's
+forecast expects to pay 9,300.00 that the bank refuses. A statement that
+closes where the forecast said is a green block on the line; one that does
+not is red, with the distance drawn, and the next morning's forecast replaces
+the line.
+
 ## Layout
 
 | File | What is in it |
@@ -199,7 +229,8 @@ Without one they are skipped with a warning and the unit tests still run.
 | `src/wire.jl` | Reading both mocks over HTTP |
 | `src/calendar.jl`, `src/money.jl` | Business days, and amounts as whole minor units |
 | `src/report.jl`, `src/cli.jl` | The table, the plot, the JSON and the command line |
-| `test/world.py` | The suppliers, the customers and the morning's payment run |
+| `test/world.py`, `test/harness.jl` | The suppliers, the customers and the morning's payment run; starting both mocks |
+| `film/` | The capture of a week, and the film drawn from it |
 
 ## Out of scope
 
