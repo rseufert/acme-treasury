@@ -20,7 +20,7 @@ mock-bank  ──camt.052, payments,─────▶
 mock-bank  ──camt.053──▶  the same figure, or the test fails
 ```
 
-![Monday's forecast is drawn as a line. Monday's statement lands off it, in red, by 9,300.00. Tuesday's forecast replaces the line and names the invoice the bank refused, and the next seven statements land on it](docs/week.gif)
+![Monday's forecast is drawn as a line. Monday's statement lands off it, in red, by 9,300.00. Tuesday's forecast replaces the line and names the invoice the bank refused, and the next seven statements land on it](docs/films/treasury_week.gif)
 
 *mock-sap 0.17.1 and mock-bank 0.7.0, played for a week by mock-acme's payment run: `film/capture.jl`. Every block is a `camt.053`.*
 
@@ -174,7 +174,7 @@ closes under the floor. It is a small mixed-integer program, written in
 [JuMP](https://jump.dev) and solved by [HiGHS](https://highs.dev), and like the
 forecast it is a pure function of a snapshot.
 
-![Monday's forecast is drawn and dips under a floor of 10,000.00 on Monday the 12th, in red. The plan holds INV-E until Tuesday the 13th and the line is redrawn without the dip. Eight statements then land on the planned line, none under the floor](docs/plan.gif)
+![Monday's forecast is drawn and dips under a floor of 10,000.00 on Monday the 12th, in red. The plan holds INV-E until Tuesday the 13th and the line is redrawn without the dip. Eight statements then land on the planned line, none under the floor](docs/films/treasury_plan.gif)
 
 *mock-sap 0.17.1, mock-bank 0.7.0 and mock-acme 0.1.0, with `plan --apply` before each morning's payment run: `film/capture_plan.jl`. Every block is a `camt.053`.*
 
@@ -298,7 +298,7 @@ nothing else.
 ```bash
 julia --project=. film/capture.jl                               # needs the mocks, as the tests do
 julia --project=film -e 'using Pkg; Pkg.instantiate()'          # once: Makie is large
-julia --project=film film/render.jl                             # docs/week.gif and docs/week.mp4
+julia --project=film film/render.jl                             # docs/films/treasury_week.gif and .mp4
 ```
 
 The film under [The payment schedule](#the-payment-schedule) is made the same
@@ -308,7 +308,7 @@ solver; the plan it draws is the one the capture recorded.
 
 ```bash
 julia --project=. film/capture_plan.jl                          # film/plan.json
-julia --project=film film/render_plan.jl                        # docs/plan.gif and docs/plan.mp4
+julia --project=film film/render_plan.jl                        # docs/films/treasury_plan.gif and .mp4
 ```
 
 Makie is in its own environment under `film/`, so the forecast does not take
@@ -324,6 +324,33 @@ the line. In the second, the stretch of the forecast under the floor is red
 until the plan replaces it. The held invoice is never red: holding it is the
 fix.
 
+### Publishing a film
+
+The films are indexed the way [mock-films](https://github.com/rseufert/mock-films)
+indexes its own, so that whatever reads its `docs/films/index.json`, as
+rickseufert.com does, reads this one: one entry for each film, with its name
+(stable for the life of the film), the GIF's hash and size, the date its bytes
+last changed, the mocks and versions it was captured from, the capture's own
+`source`, and its `alt` and `caption`.
+
+| File | What it is |
+| --- | --- |
+| `docs/films/words.json` | Written by hand and reviewed like code: each film's `alt`, `caption`, `mocks`, the capture and the renderer it is made from, and an optional `poster_ms` |
+| `docs/films/index.json` | The manifest. Written by `film/record.jl`, so its numbers are never typed |
+| `docs/films/<name>.sha256` | What the GIF was rendered from: its capture, its renderer and `film/look.jl`, in the format `shasum -a 256 -c` reads |
+
+```bash
+julia --project=. film/record.jl        # after rendering
+```
+
+The tests fail when a capture, a renderer or `look.jl` has changed since its
+film was recorded, or when the manifest is not what recording now would
+write, so this page cannot show a film the code no longer makes. A film marked
+`finished` is public the next time a site reads the manifest; one that is
+pulled is marked `withdrawn` by hand and never dropped. The `alt` and
+`caption` claim nothing the capture does not show, and say what the capture
+script did itself.
+
 ## Layout
 
 | File | What is in it |
@@ -336,7 +363,8 @@ fix.
 | `src/calendar.jl`, `src/money.jl` | Business days, and amounts as whole minor units |
 | `src/report.jl`, `src/cli.jl` | The table, the plot, the JSON and the command line |
 | `test/world.py`, `test/harness.jl` | The suppliers, the customers and the morning's payment run; starting both mocks |
-| `film/` | The captures of the two weeks, and the films drawn from them; `look.jl` is what the two share |
+| `film/` | The captures of the two weeks, and the films drawn from them; `look.jl` is what the two share, and `films.jl` and `record.jl` keep the manifest |
+| `docs/films/` | The films, what each was rendered from, and the manifest of them |
 
 ## Out of scope
 

@@ -5,4 +5,5 @@ using Test
 @testset "AcmeTreasury" begin
     include("units.jl")
     include("mocks.jl")
+    include("films.jl")
 end
