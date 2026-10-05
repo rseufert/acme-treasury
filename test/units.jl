@@ -383,3 +383,38 @@ end
     @test held(sure) == [("INV-1", tuesday, wednesday, 1), ("INV-2", tuesday, wednesday, 1)]
     @test shortfall(sure) === nothing
 end
+
+@testset "the guard: an invoice the bank already has is kept from the next run" begin
+    sent(reference; kw...) = BankPayment(; reference, amount = 1_000_00, currency = "EUR",
+                                         status = "accepted", settles = MON12, kw...)
+    inv(reference, block = "") = payable(reference, 1_000_00, MON12; block, invoice = reference * "/2026")
+    told(items, payments; guard = true) =
+        [(c.action, c.reference, c.outcome)
+         for c in changes(week(; items, payments), planpayments(week(; items, payments), Scenario(days = 2)); guard)]
+
+    # At the bank, accepted and not sent back: blocked, and said once.
+    @test told([inv("INV-1")], [sent("INV-1")]) == [(:guard, "INV-1", :wanted)]
+    @test told([inv("INV-1", "T")], [sent("INV-1")]) == [(:guard, "INV-1", :already)]
+    @test told([inv("INV-1")], [sent("INV-1"; booked = true)]) == [(:guard, "INV-1", :wanted)]
+    # Without the guard nothing is blocked for it, and a block left from it is lifted.
+    @test told([inv("INV-1")], [sent("INV-1")]; guard = false) == []
+    @test told([inv("INV-1", "T")], [sent("INV-1")]; guard = false) == [(:release, "INV-1", :wanted)]
+    # Come back, or refused: not at the bank, so the block goes and the run sees it again.
+    @test told([inv("INV-1", "T")], [sent("INV-1"; booked = true, returned = true)]) ==
+          [(:release, "INV-1", :wanted)]
+    @test told([inv("INV-1", "T")], [BankPayment(reference = "INV-1", amount = 1_000_00, currency = "EUR",
+                                                 status = "rejected", reason = "AC04")]) ==
+          [(:release, "INV-1", :wanted)]
+    # The newest payment decides: sent again after a return, it is at the bank again.
+    @test told([inv("INV-1")], [sent("INV-1"), sent("INV-1"; booked = true, returned = true)]) ==
+          [(:guard, "INV-1", :wanted)]
+    # Nothing at the bank, or somebody else's block: left alone.
+    @test told([inv("INV-1")], BankPayment[]) == []
+    @test told([inv("INV-1", "A")], [sent("INV-1")]) == []
+
+    # It changes nothing the forecast says: counted once, not left out, not owed later.
+    items, payments = [inv("INV-1", "T")], [sent("INV-1")]
+    @test closing(forecast(week(; items, payments), Scenario(days = 2))) ==
+          closing(forecast(week(; items = [inv("INV-1")], payments), Scenario(days = 2))) == [44_000_00, 44_000_00]
+    @test reasons(forecast(week(; items, payments), Scenario(days = 2))) == []
+end

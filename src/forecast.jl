@@ -70,6 +70,18 @@ end
 
 squeeze(text) = replace(text, r"\s+" => "")
 
+"The newest payment at the bank under each reference: it decides what its item is."
+function newest(snap::Snapshot)
+    latest = Dict{String,BankPayment}()
+    for p in snap.payments
+        haskey(latest, p.reference) || (latest[p.reference] = p)
+    end
+    latest
+end
+
+"The bank has it and has not sent it back: in the balance already, or on its way out."
+atbank(payment) = payment !== nothing && payment.status == "accepted" && !payment.returned
+
 """
     forecast(snapshot, scenario = Scenario())
 
@@ -117,11 +129,7 @@ function project(snap::Snapshot, scenario::Scenario, planned::Dict{String,Date},
     flows, asides = Flow[], Aside[]
     ours(currency) = currency == snap.currency
 
-    # The newest payment under each reference decides what its item is.
-    latest = Dict{String,BankPayment}()
-    for p in snap.payments
-        haskey(latest, p.reference) || (latest[p.reference] = p)
-    end
+    latest = newest(snap)
 
     for p in snap.payments
         (p.status == "accepted" && ours(p.currency)) || continue
@@ -154,7 +162,7 @@ function project(snap::Snapshot, scenario::Scenario, planned::Dict{String,Date},
                 aside(:noinvoice, "no supplier invoice behind it, so no payment run selects it")
             elseif item.block != "" && !held(item, scenario) && !scenario.releaseblocked
                 aside(:blocked, "payment block $(item.block)")
-            elseif payment !== nothing && payment.status == "accepted" && !payment.returned
+            elseif atbank(payment)
                 continue    # at the bank already: in the balance, or a flow above
             elseif payment !== nothing && payment.status != "accepted"
                 aside(:rejected, "the bank refused it" * (payment.reason == "" ? "" : ": $(payment.reason)"))
