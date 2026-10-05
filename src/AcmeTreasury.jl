@@ -7,18 +7,22 @@ module AcmeTreasury
 
 using Dates
 using EzXML: parsexml, root, nodecontent, nodename, eachelement
+using HiGHS
 using HTTP
 using JSON
+using JuMP
 using UnicodePlots: stairs
 
 export cents, money, BankCalendar, isbusinessday, onorafter, addbusinessdays,
        OpenItem, BankPayment, BankCredit, Snapshot, Scenario, Flow, Aside, DayLine,
-       Forecast, forecast, snapshot, lowest, breach, report, asjson, main
+       Forecast, forecast, snapshot, lowest, breach, Hold, Plan, planpayments, shortfall,
+       report, asjson, main
 
 include("money.jl")
 include("calendar.jl")
 include("snapshot.jl")
 include("forecast.jl")
+include("schedule.jl")
 include("wire.jl")
 include("report.jl")
 include("cli.jl")

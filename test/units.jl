@@ -152,3 +152,93 @@ end
     @test occursin("Under the floor of 500.00 from Tue 06 Oct", out)
     @test occursin("Lowest: -200.00 on Tue 06 Oct", out)
 end
+
+# The demo week on its Monday the 12th morning: 45,000.00 in the account,
+# INV-E due the Saturday before, and the customer's 42,500.00 due on Tuesday.
+const MON12 = Date(2026, 10, 12)
+week(; kw...) = snap(; now = DateTime(MON12) + Hour(9), today = MON12, position = 45_000_00, kw...)
+held(plan) = [(h.reference, h.from, h.to, h.days) for h in plan.holds]
+
+@testset "a forecast that keeps the floor holds nothing" begin
+    world = snap(items = [payable("INV-1", 120_000, MON)])
+    plan = planpayments(world, Scenario(days = 3, floor = 50_000_00))
+    @test plan.holds == []
+    @test closing(plan.forecast) == closing(forecast(world, Scenario(days = 3)))
+    @test shortfall(plan) === nothing
+end
+
+@testset "an invoice is held one day, until the customer has paid" begin
+    world = week(items = [payable("INV-E", 61_450_00, Date(2026, 10, 10)),
+                          receivable("1800000001", 42_500_00, Date(2026, 10, 13))])
+    scenario = Scenario(days = 3, floor = 10_000_00)
+    @test closing(forecast(world, scenario)) == [-16_450_00, 26_050_00, 26_050_00]
+    plan = planpayments(world, scenario)
+    @test held(plan) == [("INV-E", MON12, Date(2026, 10, 13), 1)]
+    @test plan.holds[1].due == Date(2026, 10, 10)
+    @test closing(plan.forecast) == [45_000_00, 26_050_00, 26_050_00]
+    @test lowest(plan.forecast).day == Date(2026, 10, 13)
+    @test closing(plan.before) == [-16_450_00, 26_050_00, 26_050_00]
+    @test shortfall(plan) === nothing
+    @test only(f for f in plan.forecast.flows if f.reference == "INV-E").note == "held from 2026-10-12"
+end
+
+@testset "of two invoices, the one that costs least to hold" begin
+    # Either alone clears the floor on Monday; the small one is the one to hold.
+    world = week(items = [payable("INV-BIG", 40_000_00, MON12), payable("INV-SMALL", 36_000_00, MON12),
+                          receivable("1800000001", 42_500_00, Date(2026, 10, 13))])
+    plan = planpayments(world, Scenario(days = 3, floor = 0))
+    @test held(plan) == [("INV-SMALL", MON12, Date(2026, 10, 13), 1)]
+    @test closing(plan.forecast) == [5_000_00, 11_500_00, 11_500_00]
+
+    # Holding the small one is not enough here, so the large one is held.
+    plan = planpayments(world, Scenario(days = 3, floor = 6_000_00))
+    @test held(plan) == [("INV-BIG", MON12, Date(2026, 10, 13), 1)]
+    @test closing(plan.forecast) == [9_000_00, 11_500_00, 11_500_00]
+end
+
+@testset "a tie goes to the invoice due latest, then by reference" begin
+    money_in = receivable("1800000001", 42_500_00, Date(2026, 10, 13))
+    world = week(items = [payable("INV-OLD", 30_000_00, Date(2026, 10, 9)),
+                          payable("INV-NEW", 30_000_00, MON12), money_in])
+    @test held(planpayments(world, Scenario(days = 3, floor = 0))) ==
+          [("INV-NEW", MON12, Date(2026, 10, 13), 1)]
+    for items in ([payable("INV-B", 30_000_00, MON12), payable("INV-A", 30_000_00, MON12), money_in],
+                  [payable("INV-A", 30_000_00, MON12), money_in, payable("INV-B", 30_000_00, MON12)])
+        @test held(planpayments(week(; items), Scenario(days = 3, floor = 0))) ==
+              [("INV-A", MON12, Date(2026, 10, 13), 1)]
+    end
+end
+
+@testset "a floor no plan can keep: the smallest shortfall, and the day" begin
+    # Nothing comes in, so holding only moves the overdraft to the last day.
+    world = week(items = [payable("INV-E", 61_450_00, Date(2026, 10, 10))])
+    plan = planpayments(world, Scenario(days = 3, floor = 10_000_00))
+    @test held(plan) == [("INV-E", MON12, Date(2026, 10, 14), 2)]
+    @test closing(plan.forecast) == [45_000_00, 45_000_00, -16_450_00]
+    @test shortfall(plan).day == Date(2026, 10, 14)
+    @test shortfall(plan).closing == -16_450_00
+
+    # A day that cannot be saved does not excuse one that can.
+    world = week(position = 5_000_00,
+                 items = [payable("INV-1", 20_000_00, Date(2026, 10, 13)),
+                          receivable("1800000001", 30_000_00, Date(2026, 10, 14))])
+    plan = planpayments(world, Scenario(days = 4, floor = 10_000_00))
+    @test held(plan) == [("INV-1", Date(2026, 10, 13), Date(2026, 10, 14), 1)]
+    @test closing(plan.forecast) == [5_000_00, 5_000_00, 15_000_00, 15_000_00]
+    @test shortfall(plan).day == MON12
+end
+
+@testset "the schedule moves only what a run would pay, and never earlier" begin
+    world = week(items = [payable("INV-E", 61_450_00, Date(2026, 10, 10)),
+                          payable("INV-BLOCKED", 5_000_00, MON12; block = "A"),
+                          payable("INV-USD", 5_000_00, MON12; currency = "USD"),
+                          payable("INV-SENT", 20_000_00, MON12),
+                          payable("INV-LATER", 1_000_00, Date(2026, 10, 14)),
+                          receivable("1800000001", 42_500_00, Date(2026, 10, 13))],
+                 payments = [BankPayment(reference = "INV-SENT", amount = 20_000_00, currency = "EUR",
+                                         status = "accepted", settles = MON12)])
+    plan = planpayments(world, Scenario(days = 3, floor = 0))
+    @test held(plan) == [("INV-E", MON12, Date(2026, 10, 13), 1)]
+    @test closing(plan.forecast) == [25_000_00, 6_050_00, 5_050_00]
+    @test reasons(plan.forecast) == reasons(plan.before)
+end
