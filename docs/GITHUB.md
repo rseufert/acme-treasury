@@ -12,7 +12,7 @@ What follows is only where this repository differs, and why.
 | Actions allowed | `selected`: GitHub's own, and `julia-actions/setup-julia` | There is no publish action to allow. Julia is not in the runner's tool cache, so one third-party action installs it. It is pinned to a commit SHA in `ci.yml`, it runs with `contents: read` and nothing else, and Dependabot keeps the pin current. |
 | Dependabot | `github-actions` only | The Julia packages are pinned by the two `Manifest.toml` files and updated by hand. |
 | Merge method | squash | As `mock-bank` and `mock-acme`. Merge commits and rebase merges are switched off. |
-| `no changelog` label | present, unused | There is no changelog here to ask for an entry. The label exists because the shared set of labels is the same everywhere, and Dependabot's pull requests carry it. |
+| `no changelog` label | present, unchecked | `CHANGELOG.md` is written at each tag, not one entry a pull request, so nothing checks a pull request for one. The label exists because the shared set of labels is the same everywhere, and Dependabot's pull requests carry it. |
 
 Everything else is as that file says: the `main` ruleset with no deletion, no
 non-fast-forward and the one required check, `CI passed`; the `v*` tag
