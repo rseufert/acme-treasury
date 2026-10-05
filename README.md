@@ -236,6 +236,10 @@ In SAP (nothing was changed: --apply does it)
 
   It is a plan, not a promise to wait: it is made again every morning, and on
   the morning the money is at the bank the invoice goes.
+
+  ![One week played twice, with a customer who pays a day late. The plan that trusts the due date lifts its block on Tuesday the 13th and that day's statement lands in red at -16,450.00, under the floor. The plan that allows for a day late holds the invoice to Wednesday the 14th, and all nine statements land on its line](docs/films/treasury_late.gif)
+
+  *mock-sap 0.18.0, mock-bank 0.7.0 and mock-acme 0.2.0, the customer's money paid in on the 14th: `film/capture_late.jl`. Every block is a `camt.053`.*
 - **Or only some of them are late.** Every customer late in the same week is
   the cautious end, and with more than a few customers it holds invoices that
   had no need to wait. `--late-customers K` asks the question in between:
@@ -379,6 +383,16 @@ julia --project=. film/capture_plan.jl                          # film/plan.json
 julia --project=film film/render_plan.jl                        # docs/films/treasury_plan.gif and .mp4
 ```
 
+A third is one week played twice, with a customer who pays a day late: first
+with the plan that trusts the due date, then with `--customers-late-up-to 1`.
+The line in each act is the case Monday's plan itself calls its worst, which
+for a plan that trusts the due dates is the only case it has.
+
+```bash
+julia --project=. film/capture_late.jl                          # film/late.json
+julia --project=film film/render_late.jl                        # docs/films/treasury_late.gif and .mp4
+```
+
 Makie is in its own environment under `film/`, so the forecast does not take
 it as a dependency. The renderer needs the VT323 font:
 `brew install --cask font-vt323`.
@@ -434,7 +448,7 @@ script did itself.
 | `src/calendar.jl`, `src/money.jl` | Business days, and amounts as whole minor units |
 | `src/report.jl`, `src/cli.jl` | The table, the plot, the JSON and the command line |
 | `test/world.py`, `test/harness.jl` | The suppliers, the customers and the morning's payment run; starting both mocks |
-| `film/` | The captures of the two weeks, and the films drawn from them; `look.jl` is what the two share, and `films.jl` and `record.jl` keep the manifest |
+| `film/` | The captures, and the films drawn from them; `look.jl` is what the two share, and `films.jl` and `record.jl` keep the manifest |
 | `docs/films/` | The films, what each was rendered from, and the manifest of them |
 
 ## Out of scope

@@ -138,6 +138,11 @@ function asjson(plan::Plan, wanted::Vector{Change}; applied::Bool = false,
         "worst" => Dict("customersLate" => plan.scenario.latecustomers < 0 ?
                                            worst.scenario.customerslate : plan.late,
                         "day" => string(lowest(worst).day), "closing" => lowest(worst).closing),
+        # The forecast under the plan in each case it was held to, the first the one above.
+        "cases" => [Dict("customersLate" => plan.scenario.latecustomers >= 0 && n == 2 ? plan.late :
+                                            c.scenario.customerslate,
+                         "days" => [Dict("day" => string(d.day), "closing" => d.closing) for d in c.days])
+                    for (n, c) in enumerate(plan.cases)],
         "heldDays" => helddays(plan),
         "heldDaysTrusting" => trusting === nothing ? nothing : helddays(trusting),
         "heldDaysAllLate" => together === nothing ? nothing : helddays(together),
