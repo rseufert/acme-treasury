@@ -1,0 +1,4 @@
+#!/bin/sh
+# Run the forecast from a checkout: bin/acme-treasury --help
+exec julia --startup-file=no --project="$(dirname "$0")/.." \
+    -e 'using AcmeTreasury; exit(AcmeTreasury.main(ARGS))' -- "$@"

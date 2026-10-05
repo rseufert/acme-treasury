@@ -1,4 +1,0 @@
-#!/bin/sh
-# Run the forecast from a checkout: bin/mock-treasury --help
-exec julia --startup-file=no --project="$(dirname "$0")/.." \
-    -e 'using MockTreasury; exit(MockTreasury.main(ARGS))' -- "$@"

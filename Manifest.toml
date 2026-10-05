@@ -211,7 +211,7 @@ registries = "General"
 uuid = "e1d29d7a-bbdc-5cf2-9ac0-f12de2c33e28"
 version = "1.2.0"
 
-[[deps.MockTreasury]]
+[[deps.AcmeTreasury]]
 deps = ["Dates", "EzXML", "HTTP", "JSON", "UnicodePlots"]
 path = "."
 uuid = "5ffed0dd-fdad-4193-99e4-e8cc7f783426"

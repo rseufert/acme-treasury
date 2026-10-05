@@ -3,7 +3,7 @@ A cash forecast for one bank account, made from what mock-sap says is owed and
 what mock-bank says it holds - and checked against the statements the bank
 then issues.
 """
-module MockTreasury
+module AcmeTreasury
 
 using Dates
 using EzXML: parsexml, root, nodecontent, nodename, eachelement

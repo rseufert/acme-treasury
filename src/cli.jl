@@ -1,5 +1,5 @@
 const USAGE = """
-usage: mock-treasury [--sap URL] [--bank URL] [--account ID] [--days N]
+usage: acme-treasury [--sap URL] [--bank URL] [--account ID] [--days N]
                      [--customers-late N] [--release-blocked] [--floor AMOUNT]
                      [--plot] [--json]
 
@@ -58,7 +58,7 @@ function main(args::Vector{String} = ARGS)::Int
         end
     catch error
         error isa ArgumentError || rethrow()
-        println(stderr, "mock-treasury: ", error.msg, "\n\n", USAGE)
+        println(stderr, "acme-treasury: ", error.msg, "\n\n", USAGE)
         return 2
     end
     result = try
@@ -66,9 +66,14 @@ function main(args::Vector{String} = ARGS)::Int
                  Scenario(; days, customerslate = late, releaseblocked = release, floor))
     catch error
         error isa Unusable || rethrow()
-        println(stderr, "mock-treasury: ", error.message)
+        println(stderr, "acme-treasury: ", error.message)
         return 2
     end
-    json ? println(asjson(result)) : report(stdout, result; plot)
+    try
+        json ? println(asjson(result)) : report(stdout, result; plot)
+    catch error
+        # Piped into `head`, which has read enough: not a failure.
+        error isa Base.IOError || rethrow()
+    end
     breach(result) === nothing ? 0 : 1
 end

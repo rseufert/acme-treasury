@@ -25,4 +25,4 @@ curl -s -o /dev/null -X POST $BANK_URL/_mock/credits -H 'Content-Type: applicati
     -d '{"account": "ACME", "amount": 200000, "value_date": "2026-10-06", "note": "PAYMENT",
          "debtor": {"name": "Customer Ltd", "iban": "NL14MOCK0000000002"}}'
 
-"$here/bin/mock-treasury" --days 8 --floor 10000 --plot "$@" || true
+"$here/bin/acme-treasury" --days 8 --floor 10000 --plot "$@" || true

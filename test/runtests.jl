@@ -1,8 +1,8 @@
 using Dates
-using MockTreasury
+using AcmeTreasury
 using Test
 
-@testset "MockTreasury" begin
+@testset "AcmeTreasury" begin
     include("units.jl")
     include("mocks.jl")
 end

@@ -1,4 +1,4 @@
-# mock-treasury
+# acme-treasury
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
@@ -11,7 +11,7 @@ it was right.
 
 ```
 mock-sap   ──open items──────────────▶
-                                        mock-treasury  ──▶  closing balance, day by day
+                                        acme-treasury  ──▶  closing balance, day by day
 mock-bank  ──camt.052, payments,─────▶
              credits, clock, holidays
 
@@ -85,7 +85,7 @@ the customer's money arrives, and the account is overdrawn for one night.
 Against mocks that are already running:
 
 ```bash
-bin/mock-treasury --sap http://127.0.0.1:8000 --bank http://127.0.0.1:8080
+bin/acme-treasury --sap http://127.0.0.1:8000 --bank http://127.0.0.1:8080
 ```
 
 | Flag | Default | What it does |
