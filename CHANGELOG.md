@@ -7,7 +7,7 @@ major version is 0, a minor bump may change behaviour, and each entry says so
 where it does. Nothing is published anywhere: a version is a tag on this
 repository.
 
-## [Unreleased]
+## [0.3.0] - 2026-10-05
 
 ### Added
 
@@ -77,4 +77,5 @@ The cash forecast: a pure function of what mock-sap says is owed and what
 mock-bank says it holds, checked against the `camt.053` statements the bank
 then issues, with the first film. It was not tagged.
 
+[0.3.0]: https://github.com/rseufert/acme-treasury/tree/v0.3.0
 [0.2.0]: https://github.com/rseufert/acme-treasury/tree/v0.2.0
