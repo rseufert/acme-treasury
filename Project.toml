@@ -1,6 +1,6 @@
 name = "AcmeTreasury"
 uuid = "5ffed0dd-fdad-4193-99e4-e8cc7f783426"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Rick Seufert"]
 
 [deps]
