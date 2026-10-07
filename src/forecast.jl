@@ -71,27 +71,35 @@ end
 squeeze(text) = replace(text, r"\s+" => "")
 
 """
-The newest payment at the bank that is this item's: it decides what the item
-is. The bank knows a payment by its `EndToEndId`, which is the supplier's
-invoice number, and two suppliers may use the same number, or one use it
-twice. So the reference alone is not enough: the payment is also for this
-amount in this currency, and was not at the bank before the item was posted.
-And when that still fits two open items, the one a payment run has claimed is
-the one it paid: the other is not this payment's, whatever its number says.
+Which payment at the bank is which item's, decided once for the snapshot and
+keyed by `OpenItem.document`: the payment decides what the item is. The bank
+knows a payment by its `EndToEndId`, which is the supplier's invoice number,
+and two suppliers may use the same number, or one use it twice. So the
+reference alone is not enough: the payment is also for this amount in this
+currency, and was not at the bank before the item was posted. When that still
+fits two items, SAP's own word decides, and each payment is one item's: an
+item a statement has already settled takes the payment that settled it, then
+an item a payment run has claimed, and only then an item that is merely open.
 """
-function paymentfor(snap::Snapshot, item::OpenItem)
-    item.reference == "" && return nothing
-    index = findfirst(p -> couldbe(p, item), snap.payments)
-    index === nothing && return nothing
-    payment = snap.payments[index]
-    item.run == "" && any(i -> i !== item && i.run != "" && couldbe(payment, i), snap.items) &&
-        return nothing
-    payment
+function paymentsfor(snap::Snapshot)::Dict{String,BankPayment}
+    free = trues(length(snap.payments))
+    found = Dict{String,BankPayment}()
+    rank(item) = item.cleared !== nothing ? 0 : item.run != "" ? 1 : 2
+    for item in sort(vcat(snap.cleared, snap.items); by = rank)
+        (item.kind == :payable && item.reference != "") || continue
+        k = findfirst(k -> free[k] && couldbe(snap.payments[k], item), eachindex(snap.payments))
+        k === nothing && continue
+        free[k] = false
+        item.cleared === nothing && (found[item.document] = snap.payments[k])
+    end
+    found
 end
+paymentfor(snap::Snapshot, item::OpenItem) = get(paymentsfor(snap), item.document, nothing)
 
 couldbe(p::BankPayment, item::OpenItem) =
     p.reference == item.reference && p.amount == item.amount && p.currency == item.currency &&
-    (p.received === nothing || item.posted === nothing || p.received >= item.posted)
+    (p.received === nothing || item.posted === nothing || p.received >= item.posted) &&
+    (p.received === nothing || item.cleared === nothing || p.received <= item.cleared)
 
 "A payment run has it: claimed in SAP before the file went, so it is on its way whatever the bank lists."
 inpayment(item::OpenItem) = item.kind == :payable && item.run != ""
@@ -111,7 +119,8 @@ What it holds to, each of which is a way a cash forecast is quietly wrong:
   statement clears it, so an accepted payment and its open item are one
   outflow, joined on the `EndToEndId`, the amount, and the payment not being
   older than the item: an invoice number used again is another invoice. When
-  two open items still fit, the payment is the one a run has claimed.
+  two items still fit, SAP's word decides: the item a statement has settled,
+  then the one a run has claimed.
 - **An item a payment run has claimed is in payment.** SAP says so on the item
   itself, before the bank has the file: it goes out on the run's day whether or
   not the bank's list has it, and no schedule may hold it.
@@ -171,6 +180,7 @@ function project(snap::Snapshot, scenario::Scenario, planned::Dict{String,Date},
                           "", c.payer, first(c.text, 60)))
     end
     quoted = squeeze(join((c.text for c in snap.credits), " "))
+    owned = paymentsfor(snap)
 
     for item in snap.items
         amount = item.kind == :payable ? -item.amount : item.amount
@@ -178,7 +188,7 @@ function project(snap::Snapshot, scenario::Scenario, planned::Dict{String,Date},
         if !ours(item.currency)
             aside(:currency, "in $(item.currency), and the account is in $(snap.currency)")
         elseif item.kind == :payable
-            payment = paymentfor(snap, item)
+            payment = get(owned, item.document, nothing)
             if item.reference == ""
                 aside(:noinvoice, "no supplier invoice behind it, so no payment run selects it")
             elseif item.block != "" && !held(item, scenario) && !scenario.releaseblocked

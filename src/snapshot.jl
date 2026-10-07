@@ -18,6 +18,7 @@ Base.@kwdef struct OpenItem
     posted::Union{Date,Nothing} = nothing   # PostingDate: no payment for it is older than this
     run::String = ""            # PaymentRunID: the payment run that has it, before the bank does
     rundate::Union{Date,Nothing} = nothing  # PaymentRunDate: the day that run sent it
+    cleared::Union{Date,Nothing} = nothing  # ClearingDate: settled, by a payment at the bank by then
 end
 
 "A payment the bank has decided on, from the paying account."
@@ -53,6 +54,7 @@ Base.@kwdef struct Snapshot
     calendar::BankCalendar = BankCalendar()
     position::Int               # the booked balance now, minor units
     items::Vector{OpenItem} = OpenItem[]
+    cleared::Vector{OpenItem} = OpenItem[]    # payables SAP settled lately: their payments are nobody else's
     payments::Vector{BankPayment} = BankPayment[]
     credits::Vector{BankCredit} = BankCredit[]
 end

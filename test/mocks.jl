@@ -416,6 +416,26 @@ else
             end
         end
 
+        @testset "two suppliers, one invoice number: a settled payment is nobody else's" begin
+            withmocks() do sap, bank
+                world(sap, bank, "reset")
+                world(sap, bank, "payable", GLOBEX, "INV-7", "60000.00", "2026-10-05")
+                world(sap, bank, "payable", UMBRELLA, "INV-7", "60000.00", "2026-10-07")
+                bankpost(bank, "/_mock/credits", Dict("account" => "ACME", "amount" => 4_000_000,
+                         "value_date" => "2026-10-08", "note" => "PAYMENT", "debtor" => PAYER))
+                week = played(sap, bank; last = Date(2026, 10, 8), floor = 10_000_00)
+                # Monday's run pays Globex, and Monday's statement settles its
+                # item. From Tuesday the bank's one payment fits Umbrella's open
+                # twin alone, and is not its: every morning's plan holds
+                # Umbrella's invoice to Thursday, when the customer's money is in.
+                @test [held(p) for p in week.plans] ==
+                      [fill([("INV-7", Date(2026, 10, 7), Date(2026, 10, 8), 1)], 3)..., []]
+                @test week.twice == ["INV-7"]       # one number, paid once for each supplier
+                @test [week.actual[Date(2026, 10, d)] for d in 5:8] == [65_000_00, 65_000_00, 65_000_00, 45_000_00]
+                @test agrees(week)
+            end
+        end
+
         # Every day here is played at 16:00, an hour after the bank's cutoff, so
         # what a run sends settles on the next business day, and the next day's
         # run starts before the statement that would clear the item. SAP still

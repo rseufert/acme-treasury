@@ -427,6 +427,22 @@ end
     second = twin("1710/2026/2", Date(2026, 10, 2))
     @test closing(forecast(week(items = [first, second], payments = [sent]), Scenario(days = 1))) == [44_000_00]
     @test closing(forecast(week(items = [second, first], payments = [sent]), Scenario(days = 1))) == [44_000_00]
+    # Without a claim on either, nothing says which was paid. One of them was,
+    # and one is still owed: the balance is right whichever name it carries.
     @test closing(forecast(week(items = [twin("1710/2026/1", Date(2026, 10, 1)), second],
-                                payments = [sent]), Scenario(days = 1))) == [45_000_00]
+                                payments = [sent]), Scenario(days = 1))) == [44_000_00]
+    # The first was settled by the statement and is open no longer. The payment
+    # is still its, and the second is still owed: a payment is one item's.
+    settled = twin("1710/2026/1", Date(2026, 10, 1); cleared = MON12)
+    @test closing(forecast(week(items = [second], cleared = [settled], payments = [sent]),
+                           Scenario(days = 1))) == [44_000_00]
+    # A payment the bank took in after the item was settled did not settle it.
+    earlier = twin("1710/2026/1", Date(2026, 10, 1); cleared = Date(2026, 10, 9))
+    @test closing(forecast(week(items = [second], cleared = [earlier], payments = [sent]),
+                           Scenario(days = 1))) == [45_000_00]
+    # Two payments, one each: the settled item takes the one that settled it.
+    again = BankPayment(; reference = "INV-100", amount = 1_000_00, currency = "EUR",
+                        status = "accepted", settles = MON12, booked = false, received = MON12)
+    @test closing(forecast(week(items = [second], cleared = [settled], payments = [again, sent]),
+                           Scenario(days = 1))) == [44_000_00]
 end

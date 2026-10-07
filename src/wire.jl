@@ -57,15 +57,35 @@ one does. Blocked items are read too: the forecast lists them, which a payment
 run's selection would not.
 """
 function openitems(sap::String)::Vector{OpenItem}
-    key(row) = (row["CompanyCode"], row["FiscalYear"], row["AccountingDocument"])
-    invoices = Dict(key(row) => row for row in odata(sap, INVOICES))
-    invoice(row, field) = haskey(invoices, key(row)) ? invoices[key(row)][field] : ""
+    invoices = supplierinvoices(sap)
     items = OpenItem[]
     for (letter, kind, party) in (("K", :payable, "Supplier"), ("D", :receivable, "Customer"))
         rows = odata(sap, ITEMS, "AccountingDocumentItemType eq '$letter' and " *
                                  "ClearingAccountingDocument eq ''")
-        for row in rows
-            push!(items, OpenItem(;
+        append!(items, asitems(invoices, rows, kind, party))
+    end
+    items
+end
+
+"""
+The supplier lines SAP has settled since `since`. A payment at the bank that
+one of them fits is that item's, so it is not taken for an open item with
+the same number and amount.
+"""
+cleareditems(sap::String, since::Date)::Vector{OpenItem} =
+    asitems(supplierinvoices(sap),
+            odata(sap, ITEMS, "AccountingDocumentItemType eq 'K' and ClearingAccountingDocument ne '' and " *
+                              "ClearingDate ge datetime'$(since)T00:00:00'"), :payable, "Supplier")
+
+dockey(row) = (row["CompanyCode"], row["FiscalYear"], row["AccountingDocument"])
+supplierinvoices(sap::String) = Dict(dockey(row) => row for row in odata(sap, INVOICES))
+
+function asitems(invoices::Dict, rows, kind::Symbol, party::String)::Vector{OpenItem}
+    key = dockey
+    invoice(row, field) = haskey(invoices, key(row)) ? invoices[key(row)][field] : ""
+    items = OpenItem[]
+    for row in rows
+        push!(items, OpenItem(;
                 kind,
                 document = join(key(row), "/"),
                 number = row["AccountingDocument"],
@@ -76,12 +96,12 @@ function openitems(sap::String)::Vector{OpenItem}
                 posted = sapdate(row["PostingDate"]),
                 run = something(get(row, "PaymentRunID", ""), ""),
                 rundate = sapdate(get(row, "PaymentRunDate", nothing)),
+                cleared = sapdate(row["ClearingDate"]),
                 block = something(row["PaymentBlockingReason"], ""),
                 reference = invoice(row, "SupplierInvoiceIDByInvcgParty"),
                 reopened = row["ClearingIsReversed"] === true,
                 invoice = kind == :payable && haskey(invoices, key(row)) ?
                           invoice(row, "SupplierInvoice") * "/" * invoice(row, "FiscalYear") : ""))
-        end
     end
     items
 end
@@ -213,6 +233,6 @@ function snapshot(sap::String, bank::String, account::String)::Snapshot
     booked = position(bank, account)
     Snapshot(; account, currency = booked.currency, now = clock.now, today = clock.today,
              pastcutoff = clock.pastcutoff, calendar = clock.calendar, position = booked.balance,
-             items = openitems(sap), payments = payments(bank, account),
-             credits = credits(bank, account))
+             items = openitems(sap), cleared = cleareditems(sap, clock.today - Day(31)),
+             payments = payments(bank, account), credits = credits(bank, account))
 end
