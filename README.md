@@ -81,7 +81,7 @@ What moves it
 
 Left out
   blocked              -50.00  INV-C             1000013       payment block A
-  overdue           29,496.20  0100000001        1000006       due 2025-10-12
+  overdue           29,496.20  0100000001        1000006       due 2025-10-11
   ...
 ```
 
@@ -160,8 +160,8 @@ Each of these is a way a cash forecast is quietly wrong.
 - **A blocked item is not money going out.** It is listed with its block, and
   `--release-blocked` says what lifting them all would do.
 - **An overdue receivable is not money coming in.** It was due once already.
-  mock-sap seeds six of them, 684,875.06 EUR in all, and a forecast that
-  believed them would be comfortable and wrong.
+  mock-sap 0.20.0 seeds six of them, 524,619.42 EUR in all, and a forecast
+  that believed them would be comfortable and wrong.
 - **A payment the bank refused will be refused again.** Its item stays open in
   SAP and every run selects it again; it is listed with the bank's reason.
 - **A payment that will come back comes back, and is owed again:** the credit

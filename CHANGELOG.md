@@ -20,8 +20,10 @@ repository.
   with the same number and amount, it is the claimed one's; the other is still
   owed. A mock-sap before 0.19.0 reads as before: no claim, and the bank's
   list decides.
-- Tested against mock-sap 0.19.0, mock-bank 0.9.0 and mock-acme 0.3.2, which
-  CI installs unpinned.
+- Tested against mock-sap 0.19.0 and 0.20.0, mock-bank 0.9.0 and mock-acme
+  0.3.2. CI installs the mocks unpinned from PyPI. The README's figure for
+  the seeded overdue receivables is 0.20.0's, 524,619.42 EUR, where it was
+  0.19.0's 684,875.06.
 
 ## [0.3.0] - 2026-10-05
 
