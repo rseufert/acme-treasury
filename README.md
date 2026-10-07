@@ -126,6 +126,7 @@ SAP refused a write, so it can stand in a pipeline.
 | mock-sap | Open supplier and customer items, with due dates and blocks | `API_OPLACCTGDOCITEMCUBE_SRV` |
 | mock-sap | The invoice number each payable's payment carries | `API_SUPPLIERINVOICE_PROCESS_SRV` |
 | mock-sap | The payment run that has an item in flight, when one does | `PaymentRunID` on the same open item, from mock-sap 0.19.0 |
+| mock-sap | The supplier items a statement settled in the last month, so the payment that settled one is nobody else's | The same cube, its cleared lines |
 
 The `camt.052` and the two OData services are what a real bank and a real
 S/4HANA system offer. The three `/_mock` reads are not: a real bank does not
@@ -151,8 +152,10 @@ Each of these is a way a cash forecast is quietly wrong.
   is an open item in SAP and a debit at the bank. They are joined on the
   `EndToEndId` and counted once. The number alone is not enough, since two
   suppliers may use the same one: the payment is also for the item's amount,
-  and did not reach the bank before the item was posted. When two open items
-  still fit, the payment is the one a payment run has claimed.
+  and did not reach the bank before the item was posted. When two items still
+  fit, SAP's own word decides, and each payment is one item's: an item a
+  statement has already settled takes the payment that settled it, then an
+  item a payment run has claimed, and only then an item that is merely open.
 - **An item a payment run has claimed is in payment.** SAP says so on the
   item itself, before the bank has the file. It goes out on the run's day
   whether or not the bank lists it, and no schedule may hold it: it is not a
@@ -342,6 +345,7 @@ floor holds, but that the bank's statements say it held.
 | What Monday cannot know | The closed account above: Monday is out by the invoice, Tuesday is not |
 | A side that is down is named | SAP or the bank not answering is said in words, with exit status 2 |
 | A plan applied in SAP | A dry run leaves SAP as it was; `--apply` blocks the held invoice and the second apply changes nothing; another reason's block is never touched; the block is lifted on its day and the run then pays it |
+| Two suppliers, one invoice number | Globex's INV-7 is paid Monday and settled by Monday's statement; Umbrella's INV-7, for the same 60,000.00, is still owed: every morning's plan holds it to Thursday, each supplier is paid once, and every forecast is the statements' |
 | A run's claim is read from SAP, and is SAP's word | After Monday's run the item it paid carries `R1` and the day; with the bank's list taken away, the forecast still has it going out on Monday, in payment run R1, and no plan holds it |
 | A write SAP refuses is named | One `PATCH` answered 423 is reported with what SAP said, the other is still written, and the exit status is 2 |
 | The demo week without the schedule | The statement for Monday the 12th closes at -16,450.00: the problem the schedule is for is real |
