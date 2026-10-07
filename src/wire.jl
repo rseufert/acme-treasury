@@ -52,8 +52,9 @@ end
 
 """
 Every open supplier and customer line in SAP, each payable with the invoice
-number its payment will carry. Blocked items are read too: the forecast lists
-them, which a payment run's selection would not.
+number its payment will carry, and the payment run that has it in flight, when
+one does. Blocked items are read too: the forecast lists them, which a payment
+run's selection would not.
 """
 function openitems(sap::String)::Vector{OpenItem}
     key(row) = (row["CompanyCode"], row["FiscalYear"], row["AccountingDocument"])
@@ -73,6 +74,8 @@ function openitems(sap::String)::Vector{OpenItem}
                 currency = row["TransactionCurrency"],
                 due = sapdate(row["NetDueDate"]),
                 posted = sapdate(row["PostingDate"]),
+                run = something(get(row, "PaymentRunID", ""), ""),
+                rundate = sapdate(get(row, "PaymentRunDate", nothing)),
                 block = something(row["PaymentBlockingReason"], ""),
                 reference = invoice(row, "SupplierInvoiceIDByInvcgParty"),
                 reopened = row["ClearingIsReversed"] === true,

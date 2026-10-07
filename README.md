@@ -125,12 +125,16 @@ SAP refused a write, so it can stand in a pipeline.
 | mock-bank | Today, the cutoff, the holidays | `GET /_mock/state` |
 | mock-sap | Open supplier and customer items, with due dates and blocks | `API_OPLACCTGDOCITEMCUBE_SRV` |
 | mock-sap | The invoice number each payable's payment carries | `API_SUPPLIERINVOICE_PROCESS_SRV` |
+| mock-sap | The payment run that has an item in flight, when one does | `PaymentRunID` on the same open item, from mock-sap 0.19.0 |
 
 The `camt.052` and the two OData services are what a real bank and a real
 S/4HANA system offer. The three `/_mock` reads are not: a real bank does not
 tell you a payment will be returned on Thursday. That is the mock's control
 plane, and what comes from it is labelled `payment`, `credit` or `return` in
-the output, apart from what SAP said.
+the output, apart from what SAP said. That an invoice is in payment at all is
+SAP's word, not the bank's: a payment run writes its identification on the
+item before its file goes, as F110 does, and the bank's list then says when
+the money settles, whether it was refused, and whether it comes back.
 
 Asking for the `camt.052` leaves one message in the bank's mailbox each time.
 
@@ -147,7 +151,12 @@ Each of these is a way a cash forecast is quietly wrong.
   is an open item in SAP and a debit at the bank. They are joined on the
   `EndToEndId` and counted once. The number alone is not enough, since two
   suppliers may use the same one: the payment is also for the item's amount,
-  and did not reach the bank before the item was posted.
+  and did not reach the bank before the item was posted. When two open items
+  still fit, the payment is the one a payment run has claimed.
+- **An item a payment run has claimed is in payment.** SAP says so on the
+  item itself, before the bank has the file. It goes out on the run's day
+  whether or not the bank lists it, and no schedule may hold it: it is not a
+  run's to select again.
 - **A blocked item is not money going out.** It is listed with its block, and
   `--release-blocked` says what lifting them all would do.
 - **An overdue receivable is not money coming in.** It was due once already.
@@ -333,6 +342,7 @@ floor holds, but that the bank's statements say it held.
 | What Monday cannot know | The closed account above: Monday is out by the invoice, Tuesday is not |
 | A side that is down is named | SAP or the bank not answering is said in words, with exit status 2 |
 | A plan applied in SAP | A dry run leaves SAP as it was; `--apply` blocks the held invoice and the second apply changes nothing; another reason's block is never touched; the block is lifted on its day and the run then pays it |
+| A run's claim is read from SAP, and is SAP's word | After Monday's run the item it paid carries `R1` and the day; with the bank's list taken away, the forecast still has it going out on Monday, in payment run R1, and no plan holds it |
 | A write SAP refuses is named | One `PATCH` answered 423 is reported with what SAP said, the other is still written, and the exit status is 2 |
 | The demo week without the schedule | The statement for Monday the 12th closes at -16,450.00: the problem the schedule is for is real |
 | The demo week with the schedule | Played with `plan --apply` before each run and a floor of 10,000.00, no statement closes under 26,050.00; INV-E is paid on Tuesday the 13th and every other invoice on its day; what is held only ever shrinks from one morning's plan to the next; and every morning's forecast, knowing its own holds, is the statements' |
