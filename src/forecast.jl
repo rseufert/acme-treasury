@@ -76,15 +76,25 @@ is. The bank knows a payment by its `EndToEndId`, which is the supplier's
 invoice number, and two suppliers may use the same number, or one use it
 twice. So the reference alone is not enough: the payment is also for this
 amount in this currency, and was not at the bank before the item was posted.
+And when that still fits two open items, the one a payment run has claimed is
+the one it paid: the other is not this payment's, whatever its number says.
 """
 function paymentfor(snap::Snapshot, item::OpenItem)
     item.reference == "" && return nothing
-    index = findfirst(snap.payments) do p
-        p.reference == item.reference && p.amount == item.amount && p.currency == item.currency &&
-            (p.received === nothing || item.posted === nothing || p.received >= item.posted)
-    end
-    index === nothing ? nothing : snap.payments[index]
+    index = findfirst(p -> couldbe(p, item), snap.payments)
+    index === nothing && return nothing
+    payment = snap.payments[index]
+    item.run == "" && any(i -> i !== item && i.run != "" && couldbe(payment, i), snap.items) &&
+        return nothing
+    payment
 end
+
+couldbe(p::BankPayment, item::OpenItem) =
+    p.reference == item.reference && p.amount == item.amount && p.currency == item.currency &&
+    (p.received === nothing || item.posted === nothing || p.received >= item.posted)
+
+"A payment run has it: claimed in SAP before the file went, so it is on its way whatever the bank lists."
+inpayment(item::OpenItem) = item.kind == :payable && item.run != ""
 
 "The bank has it and has not sent it back: in the balance already, or on its way out."
 atbank(payment) = payment !== nothing && payment.status == "accepted" && !payment.returned
@@ -100,7 +110,11 @@ What it holds to, each of which is a way a cash forecast is quietly wrong:
 - **A payment at the bank is not owed twice.** SAP keeps an item open until a
   statement clears it, so an accepted payment and its open item are one
   outflow, joined on the `EndToEndId`, the amount, and the payment not being
-  older than the item: an invoice number used again is another invoice.
+  older than the item: an invoice number used again is another invoice. When
+  two open items still fit, the payment is the one a run has claimed.
+- **An item a payment run has claimed is in payment.** SAP says so on the item
+  itself, before the bank has the file: it goes out on the run's day whether or
+  not the bank's list has it, and no schedule may hold it.
 - **A blocked item is not money going out,** and an overdue receivable is not
   money coming in: it was due once already. Both are listed, not forecast.
 - **The schedule's own block is not anyone else's.** An item it is holding is
@@ -171,6 +185,13 @@ function project(snap::Snapshot, scenario::Scenario, planned::Dict{String,Date},
                 aside(:blocked, "payment block $(item.block)")
             elseif atbank(payment)
                 continue    # at the bank already: in the balance, or a flow above
+            elseif inpayment(item) && payment === nothing
+                # Claimed by a run the bank has nothing from yet: it is on its
+                # way, on the run's day, and is not a run's to select again.
+                day = onorafter(cal, max(something(item.rundate, snap.today), snap.today))
+                push!(flows, Flow(day, amount, :payable, item.reference, item.party,
+                                  "in payment run $(item.run)" *
+                                  (item.rundate === nothing ? "" : " of $(item.rundate)")))
             elseif payment !== nothing && payment.status != "accepted"
                 aside(:rejected, "the bank refused it" * (payment.reason == "" ? "" : ": $(payment.reason)"))
             elseif item.due === nothing

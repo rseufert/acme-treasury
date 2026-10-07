@@ -16,6 +16,8 @@ Base.@kwdef struct OpenItem
     reopened::Bool = false      # ClearingIsReversed: paid once, and it came back
     invoice::String = ""        # SupplierInvoice/FiscalYear, where a payment block is set
     posted::Union{Date,Nothing} = nothing   # PostingDate: no payment for it is older than this
+    run::String = ""            # PaymentRunID: the payment run that has it, before the bank does
+    rundate::Union{Date,Nothing} = nothing  # PaymentRunDate: the day that run sent it
 end
 
 "A payment the bank has decided on, from the paying account."

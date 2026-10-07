@@ -7,6 +7,22 @@ major version is 0, a minor bump may change behaviour, and each entry says so
 where it does. Nothing is published anywhere: a version is a tag on this
 repository.
 
+## [Unreleased]
+
+### Added
+
+- **A payment run's claim on an open item is read, and is SAP's word that the
+  item is in payment** (#25). mock-sap 0.19.0 carries `PaymentRunID` and
+  `PaymentRunDate` to the open item, and mock-acme 0.3.0's run writes them
+  before its file goes. A claimed payable goes out on the run's day whether or
+  not the bank's list has it, with `in payment run R1 of 2026-10-12` as its
+  note, and no plan holds it. Where a payment at the bank fits two open items
+  with the same number and amount, it is the claimed one's; the other is still
+  owed. A mock-sap before 0.19.0 reads as before: no claim, and the bank's
+  list decides.
+- Tested against mock-sap 0.19.0, mock-bank 0.9.0 and mock-acme 0.3.2, which
+  CI installs unpinned.
+
 ## [0.3.0] - 2026-10-05
 
 ### Added

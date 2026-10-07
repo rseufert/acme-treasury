@@ -394,6 +394,28 @@ else
                 @test agrees(week, week.forecasts[9:end])
             end
         end
+        @testset "a run's claim is read from SAP, and is SAP's word" begin
+            withmocks() do sap, bank
+                world(sap, bank, "reset")
+                world(sap, bank, "payable", GLOBEX, "INV-A", "1200.00", "2026-10-05")
+                world(sap, bank, "payable", GLOBEX, "INV-B", "800.00", "2026-10-07")
+                world(sap, bank, "run")
+                snap = snapshot(sap, bank, "ACME")
+                @test Dict(i.reference => (i.run, i.rundate) for i in snap.items if i.reference != "") ==
+                      Dict("INV-A" => ("R1", Date(2026, 10, 5)), "INV-B" => ("", nothing))
+                # With the bank's list taken away, SAP alone says INV-A is in
+                # payment: it goes out on the run's day, and no plan holds it.
+                blind = Snapshot(; account = snap.account, currency = snap.currency, now = snap.now,
+                                 today = snap.today, pastcutoff = snap.pastcutoff, calendar = snap.calendar,
+                                 position = snap.position, items = snap.items,
+                                 payments = BankPayment[], credits = snap.credits)
+                f = forecast(blind, Scenario(days = 3))
+                @test [(x.day, x.note) for x in f.flows if x.reference == "INV-A"] ==
+                      [(Date(2026, 10, 5), "in payment run R1 of 2026-10-05")]
+                @test isempty(planpayments(blind, Scenario(days = 3, floor = 10_000_000_00)).holds)
+            end
+        end
+
         # Every day here is played at 16:00, an hour after the bank's cutoff, so
         # what a run sends settles on the next business day, and the next day's
         # run starts before the statement that would clear the item. SAP still

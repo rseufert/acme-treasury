@@ -396,3 +396,37 @@ end
     @test closing(f(inv(amount = 2_500_00), sent())) == [42_500_00]
     @test closing(f(inv(posted = Date(2026, 10, 10)), sent(received = Date(2026, 9, 1)))) == [44_000_00]
 end
+
+@testset "an item a payment run has claimed is in payment" begin
+    claimed(; kw...) = payable("INV-200", 10_000_00, Date(2026, 10, 14); invoice = "INV-200/2026",
+                               run = "R1", rundate = MON12, kw...)
+    # SAP says a run has it and the bank lists nothing for it yet: it goes out
+    # on the run's day, not on its due date.
+    f = forecast(week(items = [claimed()]), Scenario(days = 3))
+    @test closing(f) == [35_000_00, 35_000_00, 35_000_00]
+    @test only(f.flows).note == "in payment run R1 of 2026-10-12"
+    # A run that sent it last week: today.
+    @test closing(forecast(week(items = [claimed(rundate = Date(2026, 10, 9))]), Scenario(days = 1))) ==
+          [35_000_00]
+    # No plan may hold it, however low the floor goes, and nothing is wanted in SAP for it.
+    plan = planpayments(week(items = [claimed()]), Scenario(days = 3, floor = 40_000_00))
+    @test isempty(plan.holds)
+    @test shortfall(plan).day == MON12
+    @test isempty(changes(week(items = [claimed()]), plan))
+
+    # Two invoices with the same number and amount, both posted before the
+    # first was paid: the payment at the bank is the claimed one's, and the
+    # other is still owed. Without a claim on either, nothing tells them apart.
+    sent = BankPayment(; reference = "INV-100", amount = 1_000_00, currency = "EUR",
+                       status = "accepted", settles = MON12, booked = true, received = MON12)
+    twin(document, posted; kw...) = OpenItem(; kind = :payable, document, number = "INV-100",
+                                             party = "1000013", amount = 1_000_00, currency = "EUR",
+                                             due = MON12, reference = "INV-100", invoice = "INV-100/2026",
+                                             posted, kw...)
+    first = twin("1710/2026/1", Date(2026, 10, 1); run = "R1", rundate = MON12)
+    second = twin("1710/2026/2", Date(2026, 10, 2))
+    @test closing(forecast(week(items = [first, second], payments = [sent]), Scenario(days = 1))) == [44_000_00]
+    @test closing(forecast(week(items = [second, first], payments = [sent]), Scenario(days = 1))) == [44_000_00]
+    @test closing(forecast(week(items = [twin("1710/2026/1", Date(2026, 10, 1)), second],
+                                payments = [sent]), Scenario(days = 1))) == [45_000_00]
+end
