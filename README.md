@@ -480,4 +480,8 @@ script did itself.
 [mock-bank](https://github.com/rseufert/mock-bank),
 [mock-acme](https://github.com/rseufert/mock-acme), the integration between
 them, and [rickseufert.com](https://rickseufert.com/#projects) for the worked examples
-that use them together.
+that use them together. The week behind the join rule above, two suppliers
+with one invoice number, is two films of
+[mock-films](https://github.com/rseufert/mock-films):
+[with the run's claim](https://github.com/rseufert/mock-films/blob/main/docs/films/twins_film.gif)
+and [without it](https://github.com/rseufert/mock-films/blob/main/docs/films/twins_unclaimed_film.gif).

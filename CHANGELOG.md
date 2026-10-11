@@ -7,7 +7,10 @@ major version is 0, a minor bump may change behaviour, and each entry says so
 where it does. Nothing is published anywhere: a version is a tag on this
 repository.
 
-## [Unreleased]
+## [0.4.0] - 2026-10-10
+
+A payment is an invoice's by SAP's word as well as the bank's: the payment
+run's claim on the open item, and the items a statement has settled.
 
 ### Added
 
