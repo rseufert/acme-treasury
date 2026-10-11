@@ -173,8 +173,9 @@ Each of these is a way a cash forecast is quietly wrong.
   the payer's reference or note carries the accounting document number. A
   payer who quotes nothing is counted beside the receivable, because nothing
   says they are the same money.
-- **After the cutoff, today's run settles tomorrow,** and nothing settles on a
-  weekend or a holiday on the bank's list.
+- **After the cutoff, today's run settles tomorrow, and so does every later
+  one:** the forecast assumes the runs it has not seen keep today's hour.
+  Nothing settles on a weekend or a holiday on the bank's list.
 - **Another currency is not added up.** mock-bank does no FX and neither does
   this; an item in a currency the account is not in is listed.
 
@@ -358,6 +359,7 @@ floor holds, but that the bank's statements say it held.
 | One of two customers pays late, and the plan allowed for any one | With `--late-customers 1`, played once with each customer as the late one: no statement under the floor either time, and one invoice held a day |
 | One of two customers pays late, and the plan allowed for both | No statement under the floor, and Monday's plan holds two invoices where allowing for one held one |
 | After the cutoff, without the schedule | Every day played at 16:00, an hour after the cutoff: Monday's run settles on Tuesday, and Tuesday's statement closes at 5,000.00, as Monday's forecast said |
+| After the cutoff, a run the forecast has not seen keeps today's hour | An invoice due Wednesday is paid by Wednesday's 16:00 run and settles Thursday, and a payment that comes back Thursday is sent again on Friday to settle Monday; every forecast from Tuesday is the statements', and Monday's, which could not know of the return, is not |
 | After the cutoff, with the schedule | The plan is in days the money moves: INV-X is held from Tuesday to Thursday, the block is lifted on Wednesday evening, that run's payment settles on Thursday, and no statement is under the floor |
 | What Monday's plan cannot know | The closed account, with a floor: Monday holds a small invoice to make room for a large one the bank then refuses, so the hold was for nothing. Tuesday's plan is made from what happened, and its forecast is the statement |
 

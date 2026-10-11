@@ -59,13 +59,15 @@ struct Forecast
 end
 
 """
-The day a payment run pays an item due on `due`: the due date or today,
-whichever is later, moved to a business day - and to the next one when today's
-cutoff has passed, because that file settles tomorrow.
+The day a payment run's payment of an item due on `due` settles: the due date
+or today, whichever is later, moved to a business day - and to the next one
+when today's cutoff has passed. A file sent after the cutoff settles tomorrow,
+and the forecast assumes the runs it has not seen keep today's hour, so after
+the cutoff every run's payment settles the business day after its day.
 """
 function runday(snap::Snapshot, due::Date)::Date
     day = onorafter(snap.calendar, max(due, snap.today))
-    day == snap.today && snap.pastcutoff ? addbusinessdays(snap.calendar, day, 1) : day
+    snap.pastcutoff ? addbusinessdays(snap.calendar, day, 1) : day
 end
 
 squeeze(text) = replace(text, r"\s+" => "")
@@ -132,6 +134,8 @@ What it holds to, each of which is a way a cash forecast is quietly wrong:
   SAP and every run reselects it; it is listed with the bank's reason.
 - **A payment that will come back comes back, and is owed again:** the credit
   on the day of the return, and the payment once more on the next run.
+- **After the cutoff, today's run settles tomorrow, and so does every later
+  one:** the runs the forecast has not seen are assumed to keep today's hour.
 - **A credit the bank already holds replaces the receivable it names,** when
   it names one; a payer who quotes nothing is counted beside it.
 """
@@ -169,8 +173,8 @@ function project(snap::Snapshot, scenario::Scenario, planned::Dict{String,Date},
         elseif p.returndue !== nothing && !p.returned
             back = onorafter(cal, max(p.returndue, snap.today))
             push!(flows, Flow(back, p.amount, :return, p.reference, "", "a settled payment coming back"))
-            push!(flows, Flow(addbusinessdays(cal, back, 1), -p.amount, :payable, p.reference, "",
-                              "owed again after the return"))
+            push!(flows, Flow(runday(snap, addbusinessdays(cal, back, 1)), -p.amount, :payable,
+                              p.reference, "", "owed again after the return"))
         end
     end
 
