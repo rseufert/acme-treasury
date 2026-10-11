@@ -48,9 +48,19 @@ end
     @test closing(f) == [98_750_00, 98_750_00, 98_750_00, 98_750_00, 98_750_00, 97_950_00]
 end
 
-@testset "after the cutoff, today's run settles tomorrow" begin
+@testset "after the cutoff, today's run settles tomorrow, and so does every later one" begin
     f = forecast(snap(pastcutoff = true, items = [payable("INV-1", 120_000, MON)]), Scenario(days = 2))
     @test closing(f) == [100_000_00, 98_800_00]
+    # A run the forecast has not seen keeps today's hour: Wednesday's file settles Thursday.
+    f = forecast(snap(pastcutoff = true, items = [payable("INV-2", 80_000, MON + Day(2))]), Scenario(days = 4))
+    @test closing(f) == [100_000_00, 100_000_00, 100_000_00, 99_200_00]
+    # And so does the run that pays again after a return: back on Thursday,
+    # sent again on Friday, settled on Monday.
+    back = BankPayment(reference = "INV-1", amount = 120_000, currency = "EUR", status = "accepted",
+                       settles = MON, booked = true, returndue = MON + Day(3))
+    f = forecast(snap(pastcutoff = true, items = [payable("INV-1", 120_000, MON)], payments = [back]),
+                 Scenario(days = 6))
+    @test closing(f) == [100_000_00, 100_000_00, 100_000_00, 101_200_00, 101_200_00, 100_000_00]
 end
 
 @testset "a forecast taken on a Saturday starts on Monday" begin

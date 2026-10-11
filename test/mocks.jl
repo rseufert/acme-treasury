@@ -478,6 +478,27 @@ else
             end
         end
 
+        @testset "after the cutoff, a run the forecast has not seen keeps today's hour" begin
+            withmocks(; start = "2026-10-05T16:00") do sap, bank
+                world(sap, bank, "reset")
+                world(sap, bank, "payable", GLOBEX, "INV-X", "1200.00", "2026-10-05")
+                world(sap, bank, "payable", UMBRELLA, "INV-Y", "800.00", "2026-10-07")
+                bankpatch(bank, "/_mock/accounts/ACME",
+                          Dict("behaviour" => "return-later", "parameters" => Dict("days" => 2)))
+                week = played(sap, bank; last = Date(2026, 10, 9))
+                # Monday's run settles Tuesday; the payment comes back Thursday
+                # and Friday's run sends it again, to settle on Monday; and
+                # Wednesday's run pays INV-Y, to settle on Thursday.
+                @test week.paid == Dict("INV-X" => Date(2026, 10, 5), "INV-Y" => Date(2026, 10, 7))
+                @test week.twice == ["INV-X"]
+                @test [week.actual[Date(2026, 10, d)] for d in 5:9] ==
+                      [125_000_00, 123_800_00, 123_800_00, 124_200_00, 124_200_00]
+                # Monday cannot know of the return; from Tuesday every forecast is the statements'.
+                @test agrees(week, week.forecasts[2:end])
+                @test !agrees(week, week.forecasts[1:1])
+            end
+        end
+
         # Two customers, Ann and Bob, each owe money on Tuesday the 6th, and two
         # invoices are due that day which need both. One of them pays a day late.
         ann, bob = CUSTOMER, "1000003"

@@ -7,6 +7,18 @@ major version is 0, a minor bump may change behaviour, and each entry says so
 where it does. Nothing is published anywhere: a version is a tag on this
 repository.
 
+## [Unreleased]
+
+### Fixed
+
+- **After the cutoff, only today's run was moved to tomorrow** (#32). A
+  forecast taken at 16:00 put an invoice due Wednesday on Wednesday, and
+  Wednesday's run, at 16:00 like Monday's, settled it on Thursday: a day early
+  on every payable no run had been seen for, and on the payment owed again
+  after a return. The forecast now assumes the runs it has not seen keep
+  today's hour, so after the cutoff every run's payment settles the business
+  day after its day.
+
 ## [0.4.0] - 2026-10-10
 
 A payment is an invoice's by SAP's word as well as the bank's: the payment
