@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  # The mocks are installed as published, so a release of theirs can break
+  # the forecast with nothing pushed here. Once a week the suite runs anyway.
+  schedule:
+    - cron: "0 6 * * 1"     # Mondays, 06:00 UTC
 
 permissions:
   contents: read
