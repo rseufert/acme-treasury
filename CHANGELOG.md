@@ -7,6 +7,17 @@ major version is 0, a minor bump may change behaviour, and each entry says so
 where it does. Nothing is published anywhere: a version is a tag on this
 repository.
 
+## [Unreleased]
+
+### Added
+
+- **The suite runs every Monday morning as well as on every push.** The
+  mocks are installed as published, so a release of theirs can break the
+  forecast with nothing pushed here; now a red run on `main` with no commit
+  behind it says so within the week.
+- **A table of the mocks each tagged version was tested against**, in the
+  README under Tests, read from each release's own CI log.
+
 ## [0.4.1] - 2026-10-13
 
 ### Fixed

@@ -372,6 +372,24 @@ They need a Python with both mocks and mock-acme installed, as in the quick
 start: `MOCK_PYTHON`, or `python3`.
 Without one they are skipped with a warning and the unit tests still run.
 
+CI installs the mocks as published on PyPI, unpinned, so a release of theirs
+can break the forecast with nothing pushed here. The suite therefore runs on
+a schedule as well, every Monday morning, and a red run on `main` with no
+commit behind it is a mock that moved. What each tagged version was tested
+against is what its own CI run installed, read from that run's log:
+
+### Tested against
+
+| acme-treasury | mock-sap | mock-bank | mock-acme |
+| --- | --- | --- | --- |
+| 0.4.1 | 0.21.0 | 0.9.0 | 0.6.0 |
+| 0.4.0 | 0.21.0 | 0.9.0 | 0.5.0 |
+| 0.3.0 | 0.18.0 | 0.7.0 | 0.2.0 |
+| 0.2.0 | 0.18.0 | 0.7.0 | 0.2.0 |
+
+It says tested against, not the lowest that works: nothing runs the tests
+there. 0.1.0 was never tagged.
+
 ## The film
 
 The film at the top is a real run. `film/capture.jl` starts both mocks, takes
