@@ -37,7 +37,8 @@ Written in Julia. Unlike the mocks it takes dependencies:
 [JuMP](https://jump.dev) with [HiGHS](https://highs.dev) for the payment
 schedule.
 
-MIT licensed. By [Rick Seufert](https://rickseufert.com).
+MIT licensed. By [Rick Seufert](https://rickseufert.com). Its
+[page](https://rickseufert.com/acme-treasury/) has the films and the payment schedule.
 
 ---
 
@@ -499,7 +500,7 @@ script did itself.
 [mock-edi](https://github.com/rseufert/mock-edi) and
 [mock-bank](https://github.com/rseufert/mock-bank),
 [mock-acme](https://github.com/rseufert/mock-acme), the integration between
-them, and [rickseufert.com](https://rickseufert.com/#projects) for the worked examples
+them, and [rickseufert.com](https://rickseufert.com/examples/) for the worked examples
 that use them together. The week behind the join rule above, two suppliers
 with one invoice number, is two films of
 [mock-films](https://github.com/rseufert/mock-films):
