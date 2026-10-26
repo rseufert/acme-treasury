@@ -35,7 +35,7 @@ jobs:
         run: python -m pip list
       # The one action here that GitHub does not own, so it is pinned to a
       # commit and named in the repository's allowed actions (docs/GITHUB.md).
-      - uses: julia-actions/setup-julia@fa02766e078afaaf09b14210362cee14137e6a32 # v3.0.2
+      - uses: julia-actions/setup-julia@da908477b5db94c10ffce8cfea9f2b3b9d5db687 # v3.0.3
         with:
           version: "1.13"
       - name: Run the tests
